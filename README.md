@@ -8,6 +8,9 @@ geometries, textures and programs, with a small dockable HUD. Zero dependencies.
 bun add -d @zkmake/three-meter   # or npm i -D / pnpm add -D
 ```
 
+Live demo: [three-meter.pages.dev](https://three-meter.pages.dev/). Add `?webgpu` for the WebGPU
+renderer and `?count=5000` to load the scene up.
+
 The sampler and the card are separate components, so toggling the HUD never remounts your canvas.
 GPU time is measured on WebGPU as well as WebGL. The counters are draw calls, render passes and
 resource counts, which is what you watch when a scene is instanced. The card docks to a screen edge,
@@ -89,7 +92,8 @@ On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a
 
 ## Examples
 
-[`examples/vanilla`](examples/vanilla) is plain three. Add `?webgpu` to use `WebGPURenderer` and
+[`examples/vanilla`](examples/vanilla) is plain three and is what runs at
+[three-meter.pages.dev](https://three-meter.pages.dev/). Add `?webgpu` to use `WebGPURenderer` and
 `?count=` to scale the scene. [`examples/r3f`](examples/r3f) is the React Three Fiber version. Each
 is a Vite app. Run `bun run dev` inside it.
 
