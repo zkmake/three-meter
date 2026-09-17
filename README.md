@@ -84,6 +84,9 @@ other through a small shared store (a React context can't cross the Canvas root)
 
 ## Shipping it
 
+Styles inject at runtime by default; to link them instead, pass `injectStyles: false` and import
+`@zkmake/three-meter/styles.css`.
+
 The package never looks at `NODE_ENV` or `import.meta.env`. Whether the HUD exists in production is
 your call — gate the import (a `?debug=` query, a build flag, a dynamic `import()`) in the app.
 
