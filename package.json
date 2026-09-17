@@ -15,13 +15,13 @@
     "three",
     "threejs"
   ],
-  "homepage": "https://github.com/zkMake/three-meter#readme",
-  "bugs": "https://github.com/zkMake/three-meter/issues",
+  "homepage": "https://github.com/zkmake/three-meter#readme",
+  "bugs": "https://github.com/zkmake/three-meter/issues",
   "license": "MIT",
   "author": "Zubin Khavarian",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zkMake/three-meter.git"
+    "url": "git+https://github.com/zkmake/three-meter.git"
   },
   "files": [
     "dist",
