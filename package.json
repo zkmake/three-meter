@@ -30,29 +30,13 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "development": "./src/index.ts",
-      "default": "./dist/index.js"
-    },
-    "./react": {
-      "development": "./src/react/index.ts",
-      "default": "./dist/react.js"
-    },
-    "./ui": {
-      "development": "./src/ui/index.ts",
-      "default": "./dist/ui.js"
-    },
+    ".": "./dist/index.js",
+    "./react": "./dist/react.js",
+    "./ui": "./dist/ui.js",
     "./package.json": "./package.json",
     "./styles.css": "./dist/styles.css"
   },
   "publishConfig": {
-    "exports": {
-      ".": "./dist/index.js",
-      "./react": "./dist/react.js",
-      "./ui": "./dist/ui.js",
-      "./package.json": "./package.json",
-      "./styles.css": "./dist/styles.css"
-    },
     "access": "public"
   },
   "scripts": {

@@ -4,13 +4,13 @@ import { PERF_HUD_STYLES } from "./src/ui/styles.ts";
 
 /**
  * Library build. Three ESM entries with declarations; `exports` is generated
- * into package.json on every build so it can't drift from the entries. The
- * `development` condition keeps pointing at `src/`, which is what the monorepo
- * (Vite dev, vitest, tsc via `customConditions`) resolves, so no build is needed to
- * consume the package here. Everything else, and the published tarball, gets
- * `dist/`. `styles.css` is emitted from the same string the runtime injects,
- * for hosts that would rather link a file. publint and arethetypeswrong run
- * after each build.
+ * into package.json on every build so it can't drift from the entries. Every
+ * condition points at `dist/`. No `devExports`: npm publishes `exports` as-is
+ * and ignores `publishConfig.exports`, so a `development` condition aimed at
+ * `src/` ships pointing at files the tarball doesn't carry (0.1.0 did exactly
+ * that). The examples reach `src/` through a Vite alias instead. `styles.css`
+ * is emitted from the same string the runtime injects, for hosts that would
+ * rather link a file. publint and arethetypeswrong run after each build.
  *
  * Not in tsconfig `include`: tsdown types reach into `@arethetypeswrong/core`,
  * which ships `.ts` sources that fail this repo's strictness. tsdown validates
@@ -29,7 +29,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   exports: {
-    devExports: "development",
     customExports: {
       "./styles.css": "./dist/styles.css",
     },
