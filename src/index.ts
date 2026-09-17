@@ -1,5 +1,5 @@
 /**
- * `@zkmake/three-meter` — frame metrics for a three.js renderer, no UI.
+ * `@zkmake/three-meter`: frame metrics for a three.js renderer, no UI.
  *
  * Zero dependencies. The renderer contract is the structural {@link PerfRenderer}
  * type, satisfied by `WebGLRenderer` and `WebGPURenderer` alike. The HUD is

@@ -2,7 +2,7 @@
  * Real GPU frame timing.
  *
  * WebGPU: Three's `trackTimestamp` + `resolveTimestampsAsync` (ms, a frame or
- * two late). Never calls `getExtension` — that is what remounted the canvas.
+ * two late). Never calls `getExtension`: that is what remounted the canvas.
  *
  * WebGL2 fallback (Safari without WebGPU, or a forced GL backend):
  * `EXT_disjoint_timer_query_webgl2`, same pool-of-queries pattern as the

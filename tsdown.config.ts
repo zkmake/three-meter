@@ -6,7 +6,7 @@ import { PERF_HUD_STYLES } from "./src/ui/styles.ts";
  * Library build. Three ESM entries with declarations; `exports` is generated
  * into package.json on every build so it can't drift from the entries. The
  * `development` condition keeps pointing at `src/`, which is what the monorepo
- * (Vite dev, vitest, tsc via `customConditions`) resolves — no build needed to
+ * (Vite dev, vitest, tsc via `customConditions`) resolves, so no build is needed to
  * consume the package here. Everything else, and the published tarball, gets
  * `dist/`. `styles.css` is emitted from the same string the runtime injects,
  * for hosts that would rather link a file. publint and arethetypeswrong run

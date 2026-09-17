@@ -9,7 +9,7 @@ type PerfHudProps = Omit<MountPerfHudOptions, "settings"> & {
 };
 
 /**
- * DOM overlay. Render it *outside* `<Canvas>` — Fiber would treat its markup
+ * DOM overlay. Render it *outside* `<Canvas>`, or Fiber would treat its markup
  * as three objects. Mounts the dockable HUD whenever a `PerfSampler` has
  * published a monitor and tears it down when that sampler unmounts.
  */

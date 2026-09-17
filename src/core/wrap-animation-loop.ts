@@ -4,7 +4,7 @@ type AnimationLoop<Args extends unknown[]> = (...args: Args) => void;
 
 /**
  * Wrap a `renderer.setAnimationLoop` callback so each tick closes the previous
- * frame and opens the next — the same bracketing the R3F sampler does. CPU time
+ * frame and opens the next, the same bracketing the R3F sampler does. CPU time
  * therefore spans the whole tick (your update code plus the render dispatch).
  *
  * ```ts

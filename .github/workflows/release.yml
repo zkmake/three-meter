@@ -2,7 +2,7 @@
 # "Version Packages" PR; merging that PR runs `bun run release`, which builds (tsdown +
 # publint + attw) and publishes with provenance.
 #
-# Auth: npm trusted publishing (OIDC) — configure this repo + workflow file as the trusted
+# Auth: npm trusted publishing (OIDC). Configure this repo + workflow file as the trusted
 # publisher on npmjs.com under the package's settings. No NPM_TOKEN secret needed once set;
 # the first-ever publish has to happen from a logged-in machine so the package exists.
 name: Release

@@ -15,7 +15,7 @@ const programCount = (info: PerfRenderer["info"]) =>
 
 /**
  * Collector of three.js frame metrics. Bracket each frame with {@link begin}/
- * {@link end} — or let {@link wrapAnimationLoop} / the R3F `PerfSampler` do it.
+ * {@link end}, or let {@link wrapAnimationLoop} or the R3F `PerfSampler` do it.
  * Works on WebGPURenderer (drawCalls, memory.programs, timestamp queries) and
  * on a WebGL renderer (calls, programs[], timer-query ext).
  *

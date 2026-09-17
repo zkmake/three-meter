@@ -1,6 +1,6 @@
 /**
  * The three Lucide marks the HUD chrome uses, inlined so the package carries
- * no icon dependency. Markup is static — nothing user-supplied reaches it.
+ * no icon dependency. The markup is static, so nothing user-supplied reaches it.
  */
 type IconName = "blend" | "grip" | "sliders";
 

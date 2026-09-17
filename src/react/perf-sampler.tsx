@@ -12,7 +12,7 @@ type PerfSamplerProps = Omit<PerformanceMonitorOptions, "renderer"> & {
 
 /**
  * In-canvas collector. Renders nothing. Fiber runs every `useFrame` before
- * `gl.render`, so the previous frame is closed here and the next one opens —
+ * `gl.render`, so the previous frame is closed here and the next one opens, and
  * GPU queries then span the render that just ran. The monitor is created in
  * an effect so StrictMode's double mount attaches and detaches cleanly.
  */

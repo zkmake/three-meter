@@ -123,7 +123,7 @@ type HudGraph = GraphCanvas & {
  * Host-agnostic widget that paints {@link Sample}s. Mount {@link element}
  * anywhere; the view drives its own throttled repaint. Compact is the floating
  * HUD; full is the checkbox list that chooses what compact shows. Styles are
- * not injected here — call `injectStyles()` or use `mountPerfHud`.
+ * not injected here. Call `injectStyles()` or use `mountPerfHud`.
  */
 class PerformanceView {
   readonly element: HTMLDivElement;

@@ -1,5 +1,5 @@
 /**
- * `@zkmake/three-meter/react` — the React Three Fiber pair. `PerfSampler`
+ * `@zkmake/three-meter/react`: the React Three Fiber pair. `PerfSampler`
  * goes inside `<Canvas>` and brackets frames; `PerfHud` goes outside it and
  * draws the dockable card. Peer deps: `react`, `@react-three/fiber`.
  */

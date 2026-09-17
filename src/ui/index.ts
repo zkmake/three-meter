@@ -1,5 +1,5 @@
 /**
- * `@zkmake/three-meter/ui` — the DOM. `mountPerfHud` is the one-liner
+ * `@zkmake/three-meter/ui`: the DOM. `mountPerfHud` is the one-liner
  * (dockable card, discs, dim-on-leave, persisted selection); the pieces underneath are
  * exported for hosts that want to compose their own panel.
  */
