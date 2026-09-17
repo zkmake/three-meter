@@ -1,4 +1,3 @@
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 // The examples resolve the package straight from `../../src` (bun can't link a workspace root

@@ -1,5 +1,4 @@
 import react from "@vitejs/plugin-react";
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 // The examples resolve the package straight from `../../src` (bun can't link a workspace root
@@ -16,8 +15,8 @@ export default defineConfig({
     ],
   },
   server: { port: 3022, strictPort: true },
-  // three alone is ~600 kB minified; the warning would fire on every build.
-  build: { chunkSizeWarningLimit: 1000 },
+  // three + react is ~1 MB minified; the warning would fire on every build.
+  build: { chunkSizeWarningLimit: 1500 },
   preview: { port: 3022, strictPort: true },
   plugins: [react()],
 });
