@@ -1,5 +1,13 @@
 # @zkmake/three-meter
 
+## 0.1.1
+
+### Patch Changes
+
+- [`bb61f94`](https://github.com/zkmake/three-meter/commit/bb61f9455f3a219e188273620d8a9ca11904710f) Thanks [@zkmake](https://github.com/zkmake)! - Fix the published `exports`. 0.1.0 shipped a `development` condition pointing at `./src`, which is
+  not in the tarball, so Vite dev servers and TypeScript with a `development` custom condition
+  resolved to a missing file. Every condition now points at `dist/`.
+
 ## 0.1.0
 
 ### Minor Changes
