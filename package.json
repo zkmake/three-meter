@@ -22,9 +22,6 @@
     "type": "git",
     "url": "git+https://github.com/zkmake/three-meter.git"
   },
-  "workspaces": [
-    "examples/*"
-  ],
   "files": [
     "dist",
     "README.md",
@@ -65,7 +62,7 @@
     "ci:format": "oxfmt --check .",
     "ci:lint": "oxlint --deny-warnings .",
     "ci:test": "vitest run",
-    "ci:typecheck": "tsc && bun run --filter './examples/*' typecheck",
+    "ci:typecheck": "tsc",
     "format": "oxfmt --write .",
     "lint": "oxlint .",
     "pack:check": "npm pack --dry-run",

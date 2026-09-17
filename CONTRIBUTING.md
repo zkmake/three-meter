@@ -4,14 +4,16 @@ Bun is the package manager and script runner.
 
 ```sh
 bun install
-bun run typecheck   # tsc, root + examples
+bun run typecheck   # tsc
 bun run test        # vitest
 bun run build       # tsdown → dist/, then publint + arethetypeswrong
 bun run lint        # oxlint
 bun run format      # oxfmt
 ```
 
-`examples/vanilla` and `examples/r3f` are Vite apps (`bun run dev` inside one). They alias
+`examples/vanilla` and `examples/r3f` are Vite apps with their own `bun install` (the root is the
+published package, not a workspace root — changesets needs it that way). `bun run dev` inside one.
+They alias
 `@zkmake/three-meter` to `../../src` (Vite `resolve.alias` + tsconfig `paths`), so editing the
 library hot-reloads in the example with no build step.
 
