@@ -1,0 +1,18 @@
+name: Bug
+description: Something reads wrong, throws, or doesn't render
+labels: [bug]
+body:
+  - type: input
+    id: setup
+    attributes:
+      label: Setup
+      description: three version, renderer (WebGL / WebGPU), React + R3F versions if used, browser
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Expected vs actual. A reproduction (StackBlitz, repo, or the `examples/` app with a diff) makes this fast.
+    validations:
+      required: true

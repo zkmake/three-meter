@@ -1,4 +1,10 @@
 {
-  "extends": "@config/typescript/tsconfig-app.json",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@zkmake/three-meter": ["../../src/index.ts"],
+      "@zkmake/three-meter/*": ["../../src/*/index.ts"]
+    }
+  },
   "include": ["src", "vite.config.ts"]
 }

@@ -1,7 +1,6 @@
 {
   "name": "@zkmake/three-meter",
   "version": "0.0.0",
-  "private": true,
   "description": "Zero-dependency three.js frame metrics (FPS, CPU, GPU, draw calls) with a dockable HUD. Vanilla three and React Three Fiber adapters.",
   "keywords": [
     "devtools",
@@ -23,6 +22,9 @@
     "type": "git",
     "url": "git+https://github.com/zkmake/three-meter.git"
   },
+  "workspaces": [
+    "examples/*"
+  ],
   "files": [
     "dist",
     "README.md",
@@ -58,23 +60,34 @@
   },
   "scripts": {
     "build": "tsdown",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "ci:format": "oxfmt --check .",
+    "ci:lint": "oxlint --deny-warnings .",
     "ci:test": "vitest run",
-    "ci:typecheck": "tsc",
+    "ci:typecheck": "tsc && bun run --filter './examples/*' typecheck",
+    "format": "oxfmt --write .",
+    "lint": "oxlint .",
     "pack:check": "npm pack --dry-run",
+    "release": "bun run build && changeset publish",
     "test": "vitest watch",
     "typecheck": "tsc"
   },
   "devDependencies": {
-    "@arethetypeswrong/core": "catalog:",
-    "@config/typescript": "workspace:*",
-    "@react-three/fiber": "catalog:",
-    "@types/react": "catalog:",
-    "@types/three": "catalog:",
-    "publint": "catalog:",
-    "react": "catalog:",
-    "three": "catalog:",
-    "tsdown": "catalog:",
-    "vitest": "catalog:"
+    "@arethetypeswrong/core": "0.18.5",
+    "@changesets/changelog-github": "1.0.1",
+    "@changesets/cli": "3.0.3",
+    "@react-three/fiber": "9.7.0",
+    "@types/react": "19.3.0",
+    "@types/three": "0.186.0",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "publint": "0.3.24",
+    "react": "19.3.0",
+    "three": "0.186.0",
+    "tsdown": "0.23.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
   },
   "peerDependencies": {
     "@react-three/fiber": ">=8",
@@ -87,5 +100,8 @@
     "react": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }

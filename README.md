@@ -4,7 +4,13 @@ Frame metrics for a three.js renderer — FPS, CPU ms, GPU ms, draw calls, rende
 geometries / textures / programs — with a small dockable HUD. Zero dependencies. Works with
 `WebGLRenderer` and `WebGPURenderer`, with or without React.
 
-> Pre-release. Lives in the `zkMake/edtech-apps` monorepo for now; see `docs/plans/perf-hud-extraction.md`.
+```sh
+bun add -d @zkmake/three-meter   # or npm i -D / pnpm add -D
+```
+
+Why another one: the sampler and the card are separate, so the HUD never remounts your canvas; it
+measures WebGPU as well as WebGL; the counters (draw calls, passes, resources) are the numbers an
+instanced scene lives by; and the card docks, persists, and stays out of the way.
 
 ## Entry points
 
@@ -79,8 +85,8 @@ other through a small shared store (a React context can't cross the Canvas root)
 
 ## Examples
 
-`examples/vanilla` (plain three, `?webgpu` for `WebGPURenderer`, `?count=` to scale) and
-`examples/r3f`. Each is a Vite app: `bun run dev--off` inside it.
+[`examples/vanilla`](examples/vanilla) (plain three; `?webgpu` for `WebGPURenderer`, `?count=` to
+scale) and [`examples/r3f`](examples/r3f). Each is a Vite app: `bun run dev` inside it.
 
 ## Shipping it
 
@@ -95,6 +101,10 @@ your call — gate the import (a `?debug=` query, a build flag, a dynamic `impor
 While a monitor is attached, `renderer.info.autoReset` is off and `info` is reset in `begin()`. One
 monitor per renderer; a second throws. `dispose()` restores everything. Theme with the `--perf-*`
 custom properties on `.perf-monitor`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Changes ship with a changeset.
 
 ## License
 
