@@ -1,0 +1,187 @@
+/**
+ * The floating HUD: a fixed host docked to a screen edge, the metrics card
+ * inside it, and two discs on the inward side (drag grip, compact/full toggle)
+ * that stay hidden until the pointer is near or someone taps. Dim-on-leave
+ * comes from the settings. This is what the React `PerfHud` wraps; a vanilla
+ * three app calls it directly.
+ */
+import type { PerformanceMonitor } from "../core/performance-monitor.ts";
+import { type DefaultPlacement, dockPanel } from "./dock-panel.ts";
+import { DEFAULT_STORAGE_KEY, HudSettings } from "./hud-settings.ts";
+import { createIcon } from "./icons.ts";
+import { PerformanceView, type PerformanceViewMode } from "./performance-view.ts";
+import { injectStyles } from "./styles.ts";
+
+const TOUCH_LINGER_MS = 2500;
+
+type MountPerfHudOptions = {
+  /** Start compact (the card) or full (the checkbox list). Default `compact`. */
+  mode?: PerformanceViewMode;
+  /** localStorage key for the selection and the dock. `null` disables persistence. */
+  storageKey?: string | null;
+  /** Bring your own; otherwise one is created from `storageKey`. */
+  settings?: HudSettings;
+  /** Where the card sits on a first visit. Default left edge, centred. */
+  defaultPlacement?: DefaultPlacement;
+  /** Where the host element goes. Default `document.body`. */
+  parent?: HTMLElement;
+  /** Append the stylesheet to the document once. Default true. */
+  injectStyles?: boolean;
+  /** Repaint rate. Default 10. */
+  refreshHz?: number;
+  /** Accessible name of the panel. Default `Performance`. */
+  label?: string;
+};
+
+type PerfHudHandle = {
+  element: HTMLDivElement;
+  view: PerformanceView;
+  settings: HudSettings;
+  getMode: () => PerformanceViewMode;
+  setMode: (mode: PerformanceViewMode) => void;
+  dispose: () => void;
+};
+
+const disc = (label: string, className: string, icon: "grip" | "sliders") => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `perf-hud__disc ${className}`.trim();
+  button.setAttribute("aria-label", label);
+  button.append(createIcon(icon, "perf-hud__icon"));
+
+  return button;
+};
+
+const mountPerfHud = (
+  monitor: PerformanceMonitor,
+  options: MountPerfHudOptions = {},
+): PerfHudHandle => {
+  const storageKey = options.storageKey === undefined ? DEFAULT_STORAGE_KEY : options.storageKey;
+  const settings = options.settings ?? new HudSettings({ storageKey });
+  const parent = options.parent ?? document.body;
+
+  if (options.injectStyles ?? true) {
+    injectStyles(parent.ownerDocument);
+  }
+
+  const host = document.createElement("div");
+  host.className = "perf-hud";
+  host.dataset.edge = "left";
+  host.setAttribute("aria-label", options.label ?? "Performance");
+
+  const hotspot = document.createElement("div");
+  hotspot.className = "perf-hud__hotspot";
+  hotspot.setAttribute("aria-hidden", "true");
+
+  const tools = document.createElement("div");
+  tools.className = "perf-hud__tools";
+  const grip = disc("Drag performance panel", "perf-hud__drag", "grip");
+  const toggle = disc("Toggle full performance metrics", "", "sliders");
+  tools.append(grip, toggle);
+
+  const view = new PerformanceView({
+    mode: options.mode ?? "compact",
+    monitor,
+    refreshHz: options.refreshHz,
+    settings,
+  });
+
+  host.append(hotspot, tools, view.element);
+  parent.append(host);
+
+  const applyMode = () => {
+    host.classList.toggle("perf-hud--full", view.getMode() === "full");
+  };
+
+  const applyDim = () => {
+    host.classList.toggle("perf-hud--dim", settings.dim);
+  };
+
+  applyMode();
+  applyDim();
+  const unsubscribe = settings.subscribe(applyDim);
+  const dock = dockPanel(host, {
+    defaultPlacement: options.defaultPlacement,
+    handle: grip,
+    storageKey,
+  });
+
+  const setMode = (mode: PerformanceViewMode) => {
+    view.setMode(mode);
+    applyMode();
+    requestAnimationFrame(() => dock.refresh());
+  };
+
+  toggle.addEventListener("click", () => {
+    setMode(view.getMode() === "compact" ? "full" : "compact");
+  });
+
+  // Wake on approach, sleep on leave; a touch lingers so the discs can be tapped.
+  let hideTimer = 0;
+
+  const sleep = () => {
+    if (host.classList.contains("is-dragging")) {
+      return;
+    }
+
+    host.classList.remove("is-awake");
+  };
+
+  const wake = (linger: boolean) => {
+    host.classList.add("is-awake");
+    window.clearTimeout(hideTimer);
+
+    if (linger) {
+      hideTimer = window.setTimeout(sleep, TOUCH_LINGER_MS);
+    }
+  };
+
+  const onEnter = () => {
+    wake(false);
+  };
+
+  const onLeave = (event: PointerEvent) => {
+    if (host.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+
+    if (event.pointerType === "touch" || event.pointerType === "pen") {
+      wake(true);
+
+      return;
+    }
+
+    sleep();
+  };
+
+  const onDown = (event: PointerEvent) => {
+    wake(event.pointerType !== "mouse");
+  };
+
+  host.addEventListener("pointerenter", onEnter);
+  host.addEventListener("pointerleave", onLeave);
+  host.addEventListener("pointerdown", onDown);
+
+  view.start();
+
+  return {
+    dispose: () => {
+      window.clearTimeout(hideTimer);
+      host.removeEventListener("pointerenter", onEnter);
+      host.removeEventListener("pointerleave", onLeave);
+      host.removeEventListener("pointerdown", onDown);
+      unsubscribe();
+      dock.dispose();
+      view.dispose();
+      host.remove();
+    },
+    element: host,
+    getMode: () => view.getMode(),
+    setMode,
+    settings,
+    view,
+  };
+};
+
+export { mountPerfHud };
+export type { MountPerfHudOptions, PerfHudHandle };
