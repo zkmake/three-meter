@@ -1,0 +1,22 @@
+{
+  "name": "@example/three-meter-vanilla",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "ci:typecheck": "tsc",
+    "dev--off": "vite",
+    "preview": "vite preview",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@zkmake/three-meter": "workspace:*",
+    "three": "catalog:"
+  },
+  "devDependencies": {
+    "@config/typescript": "workspace:*",
+    "@types/three": "catalog:",
+    "vite": "catalog:"
+  }
+}

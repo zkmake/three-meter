@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>three-meter · React Three Fiber</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        height: 100%;
+        background: #0f1115;
+        overflow: hidden;
+      }
+      #hint {
+        position: fixed;
+        right: 12px;
+        top: 12px;
+        font:
+          12px ui-monospace,
+          Menlo,
+          monospace;
+        color: #8b909a;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="hint">press <b>p</b> to toggle the HUD</div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

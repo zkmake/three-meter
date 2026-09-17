@@ -77,6 +77,11 @@ other through a small shared store (a React context can't cross the Canvas root)
   the GPU row shows `—` and `sample.gpu.available` is `false`.
 - **WebGPU**: construct the renderer with `trackTimestamp: true`; timings resolve a frame or two late.
 
+## Examples
+
+`examples/vanilla` (plain three, `?webgpu` for `WebGPURenderer`, `?count=` to scale) and
+`examples/r3f`. Each is a Vite app: `bun run dev--off` inside it.
+
 ## Shipping it
 
 The package never looks at `NODE_ENV` or `import.meta.env`. Whether the HUD exists in production is
