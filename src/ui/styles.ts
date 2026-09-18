@@ -3,16 +3,43 @@
  * injects itself once per document. `.perf-monitor` is the metrics card,
  * `.perf-hud` the floating host around it. Both namespaced so a host page can
  * override safely; the `--perf-*` custom properties are the theming surface.
+ *
+ * Both elements carry `data-theme="dark" | "light"` (see `HudTheme`) and each
+ * resolves its own tokens from it, so the card also themes when mounted on
+ * its own, outside a `.perf-hud`.
  */
 const STYLE_ATTRIBUTE = "data-three-meter";
 
 const PERF_HUD_STYLES = `
+.perf-hud,
 .perf-monitor {
-  --perf-bg: #16181d;
+  --perf-bg: rgba(22, 24, 29, 0.85);
   --perf-fg: #e6e8eb;
+  --perf-fg-dim: #c5c8ce;
   --perf-muted: #8b909a;
   --perf-row: rgba(255, 255, 255, 0.04);
+  --perf-border: rgba(255, 255, 255, 0.12);
+  --perf-accent: #60a5fa;
+  --perf-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
 
+  color-scheme: dark;
+}
+
+.perf-hud[data-theme="light"],
+.perf-monitor[data-theme="light"] {
+  --perf-bg: rgba(250, 250, 252, 0.88);
+  --perf-fg: #1a1c21;
+  --perf-fg-dim: #4b5058;
+  --perf-muted: #6b7079;
+  --perf-row: rgba(0, 0, 0, 0.05);
+  --perf-border: rgba(0, 0, 0, 0.12);
+  --perf-accent: #2563eb;
+  --perf-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+  color-scheme: light;
+}
+
+.perf-monitor {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -111,7 +138,7 @@ const PERF_HUD_STYLES = `
 
 .perf-monitor__options {
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--perf-border);
 }
 
 .perf-monitor__checkbox {
@@ -119,7 +146,7 @@ const PERF_HUD_STYLES = `
   margin: 0;
   width: 12px;
   height: 12px;
-  accent-color: #60a5fa;
+  accent-color: var(--perf-accent);
   cursor: pointer;
 }
 
@@ -217,9 +244,9 @@ const PERF_HUD_STYLES = `
   z-index: 1;
   max-height: 70vh;
   overflow: auto;
-  background: rgba(22, 24, 29, 0.85);
+  background: var(--perf-bg);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--perf-shadow);
   backdrop-filter: blur(2px);
   pointer-events: auto;
   transition: opacity 0.25s ease;
@@ -280,9 +307,9 @@ const PERF_HUD_STYLES = `
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: rgba(22, 24, 29, 0.85);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
-  color: #c5c8ce;
+  background: var(--perf-bg);
+  box-shadow: var(--perf-shadow);
+  color: var(--perf-fg-dim);
   cursor: pointer;
   backdrop-filter: blur(2px);
 }
@@ -303,8 +330,8 @@ const PERF_HUD_STYLES = `
 .perf-hud__disc:hover,
 .perf-hud__disc:focus-visible,
 .perf-hud__disc[aria-pressed="true"] {
-  color: #e6e8eb;
-  outline: 1px solid rgba(96, 165, 250, 0.6);
+  color: var(--perf-fg);
+  outline: 1px solid color-mix(in srgb, var(--perf-accent) 60%, transparent);
   outline-offset: 1px;
 }
 `;

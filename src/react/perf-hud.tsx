@@ -1,6 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-import { mountPerfHud, type MountPerfHudOptions } from "../ui/mount-perf-hud.ts";
+import {
+  mountPerfHud,
+  type MountPerfHudOptions,
+  type PerfHudHandle,
+} from "../ui/mount-perf-hud.ts";
 import { defaultPerfMonitorStore, type PerfMonitorStore } from "./monitor-store.ts";
 
 type PerfHudProps = Omit<MountPerfHudOptions, "settings"> & {
@@ -11,7 +15,8 @@ type PerfHudProps = Omit<MountPerfHudOptions, "settings"> & {
 /**
  * DOM overlay. Render it *outside* `<Canvas>`, or Fiber would treat its markup
  * as three objects. Mounts the dockable HUD whenever a `PerfSampler` has
- * published a monitor and tears it down when that sampler unmounts.
+ * published a monitor and tears it down when that sampler unmounts. `theme`
+ * is the one prop that applies live; every other change remounts the HUD.
  */
 function PerfHud({
   defaultPlacement,
@@ -22,21 +27,24 @@ function PerfHud({
   refreshHz,
   storageKey,
   store,
+  theme,
 }: PerfHudProps) {
   const source = store ?? defaultPerfMonitorStore;
+  const handleRef = useRef<PerfHudHandle | null>(null);
+  // The mount effect reads the latest theme without depending on it, so a
+  // theme change never remounts. Kept current by the theme effect below.
+  const themeRef = useRef(theme);
 
   useEffect(() => {
-    let dispose: (() => void) | null = null;
-
     const attach = (monitor: ReturnType<PerfMonitorStore["get"]>) => {
-      dispose?.();
-      dispose = null;
+      handleRef.current?.dispose();
+      handleRef.current = null;
 
       if (!monitor) {
         return;
       }
 
-      dispose = mountPerfHud(monitor, {
+      handleRef.current = mountPerfHud(monitor, {
         defaultPlacement,
         injectStyles,
         label,
@@ -44,7 +52,8 @@ function PerfHud({
         parent,
         refreshHz,
         storageKey,
-      }).dispose;
+        theme: themeRef.current,
+      });
     };
 
     const unsubscribe = source.subscribe(attach);
@@ -52,9 +61,15 @@ function PerfHud({
 
     return () => {
       unsubscribe();
-      dispose?.();
+      handleRef.current?.dispose();
+      handleRef.current = null;
     };
   }, [defaultPlacement, injectStyles, label, mode, parent, refreshHz, source, storageKey]);
+
+  useEffect(() => {
+    themeRef.current = theme;
+    handleRef.current?.setTheme(theme ?? "system");
+  }, [theme]);
 
   return null;
 }

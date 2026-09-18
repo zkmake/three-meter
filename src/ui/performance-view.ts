@@ -3,6 +3,7 @@ import type { Sample, TimingMetric } from "../core/types.ts";
 import { HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
 import { drawSparkline, type SparklineStyle } from "./sparkline.ts";
+import { applyTheme, HudTheme, type ResolvedTheme } from "./theme.ts";
 
 type PerformanceViewMode = "full" | "compact";
 
@@ -14,13 +15,19 @@ type PerformanceViewOptions = {
   refreshHz?: number;
   /** Share one between views to keep them in sync; a fresh instance otherwise. */
   settings?: HudSettings;
+  /**
+   * Share the host's so the card and its chrome switch together. Otherwise a
+   * fresh `system` instance is created and disposed with the view.
+   */
+  theme?: HudTheme;
 };
 
 type TimingConfig = {
   format: (value: number) => string;
   label: string;
   metric: TimingMetric;
-  style: SparklineStyle;
+  /** Canvas can't read CSS custom properties, so the sparkline palette lives here per theme. */
+  style: Record<ResolvedTheme, SparklineStyle>;
   unit: string;
 };
 
@@ -35,21 +42,30 @@ const TIMINGS: TimingConfig[] = [
     format: (value) => Math.round(value).toString(),
     label: "FPS",
     metric: "fps",
-    style: { fill: "rgba(74, 222, 128, 0.15)", stroke: "#4ade80" },
+    style: {
+      dark: { fill: "rgba(74, 222, 128, 0.15)", stroke: "#4ade80" },
+      light: { fill: "rgba(22, 163, 74, 0.12)", stroke: "#16a34a" },
+    },
     unit: "",
   },
   {
     format: (value) => value.toFixed(1),
     label: "CPU",
     metric: "cpu",
-    style: { fill: "rgba(96, 165, 250, 0.15)", stroke: "#60a5fa" },
+    style: {
+      dark: { fill: "rgba(96, 165, 250, 0.15)", stroke: "#60a5fa" },
+      light: { fill: "rgba(37, 99, 235, 0.12)", stroke: "#2563eb" },
+    },
     unit: "ms",
   },
   {
     format: (value) => value.toFixed(1),
     label: "GPU",
     metric: "gpu",
-    style: { fill: "rgba(244, 114, 182, 0.15)", stroke: "#f472b6" },
+    style: {
+      dark: { fill: "rgba(244, 114, 182, 0.15)", stroke: "#f472b6" },
+      light: { fill: "rgba(219, 39, 119, 0.12)", stroke: "#db2777" },
+    },
     unit: "ms",
   },
 ];
@@ -128,7 +144,10 @@ type HudGraph = GraphCanvas & {
 class PerformanceView {
   readonly element: HTMLDivElement;
   readonly settings: HudSettings;
+  readonly theme: HudTheme;
 
+  private readonly ownsTheme: boolean;
+  private readonly unsubscribeTheme: () => void;
   private readonly monitor: PerformanceMonitor;
   private readonly minIntervalMs: number;
   private mode: PerformanceViewMode;
@@ -150,15 +169,19 @@ class PerformanceView {
   constructor(options: PerformanceViewOptions) {
     this.monitor = options.monitor;
     this.settings = options.settings ?? new HudSettings();
+    this.ownsTheme = !options.theme;
+    this.theme = options.theme ?? new HudTheme();
     this.mode = options.mode ?? "full";
     this.minIntervalMs = 1000 / (options.refreshHz ?? 10);
     this.element = document.createElement("div");
     this.element.className = "perf-monitor";
     this.applyModeClass();
+    applyTheme(this.element, this.theme);
     this.resizeObserver = new ResizeObserver(() => this.resizeCanvases());
     this.build();
     this.rebuildHud();
     this.unsubscribe = this.settings.subscribe(() => this.onSelectionChanged());
+    this.unsubscribeTheme = this.theme.subscribe(() => applyTheme(this.element, this.theme));
   }
 
   start() {
@@ -191,6 +214,12 @@ class PerformanceView {
   dispose() {
     this.stop();
     this.unsubscribe();
+    this.unsubscribeTheme();
+
+    if (this.ownsTheme) {
+      this.theme.dispose();
+    }
+
     this.resizeObserver.disconnect();
     this.element.remove();
   }
@@ -228,7 +257,7 @@ class PerformanceView {
         graph.width,
         graph.height,
         available ? this.monitor.getHistory(config.metric) : [],
-        config.style,
+        config.style[this.theme.resolved],
       );
     }
 
@@ -259,7 +288,7 @@ class PerformanceView {
         graph.width,
         graph.height,
         available ? this.monitor.getHistory(metric) : [],
-        config.style,
+        config.style[this.theme.resolved],
       );
     }
   }
