@@ -11,11 +11,11 @@ bun run lint        # oxlint
 bun run format      # oxfmt
 ```
 
-`examples/vanilla` and `examples/r3f` are Vite apps with their own `bun install`. The root is the
-published package, not a workspace root, because changesets needs to see it as the package. Run
-`bun run dev` inside an example. Both alias `@zkmake/three-meter` to `../../src` through Vite
-`resolve.alias` and tsconfig `paths`, so editing the library hot-reloads in the example with no
-build step.
+`examples/site` is the demo site, a Vite app with its own `bun install` that carries both the vanilla
+three and the React Three Fiber integration (`src/demos/`). The root is the published package, not a
+workspace root, because changesets needs to see it as the package. Run `bun run dev` inside the
+example. It aliases `@zkmake/three-meter` to `../../src` through Vite `resolve.alias` and tsconfig
+`paths`, so editing the library hot-reloads in the example with no build step.
 
 ## Layout
 

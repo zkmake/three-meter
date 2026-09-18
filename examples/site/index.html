@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>three-meter · vanilla three</title>
+    <title>three-meter · demo</title>
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -19,12 +19,35 @@
     </script>
   </head>
   <body>
+    <div id="stage" aria-label="Demo scene"></div>
+
     <header class="bar">
       <div class="bar__group">
         <span class="brand">
           <span class="brand__name">three-meter</span>
-          <span class="brand__tag">vanilla three</span>
         </span>
+        <div id="demo" class="segment" role="radiogroup" aria-label="Integration">
+          <button
+            type="button"
+            class="segment__option"
+            data-demo="vanilla"
+            role="radio"
+            aria-checked="false"
+            title="Plain three.js"
+          >
+            vanilla
+          </button>
+          <button
+            type="button"
+            class="segment__option"
+            data-demo="r3f"
+            role="radio"
+            aria-checked="false"
+            title="React Three Fiber"
+          >
+            r3f
+          </button>
+        </div>
         <nav class="links" aria-label="Project links">
           <a
             class="link"
@@ -146,7 +169,7 @@
         </button>
       </div>
       <p class="install__hint">
-        then <code>mountPerfHud(monitor)</code> — see the README for the rest.
+        then <code id="install-usage">mountPerfHud(monitor)</code> — see the README for the rest.
       </p>
     </aside>
 
