@@ -1,5 +1,15 @@
 # @zkmake/three-meter
 
+## 0.3.0
+
+### Minor Changes
+
+- [#5](https://github.com/zkmake/three-meter/pull/5) [`360e70d`](https://github.com/zkmake/three-meter/commit/360e70d693a889e5bde8f0099f8cb17822a43f4a) Thanks [@zkmake](https://github.com/zkmake)! - Let the person using the HUD pick its theme. The full view gains a light / system / dark row; the
+  pick persists with the other settings under `storageKey` (`HudSettings.theme`, `setTheme`) and sits
+  on top of the consumer's `theme` option, which still applies whenever nothing has been picked.
+  `HudTheme` exposes the layers as `mode` (consumer), `override` (panel pick) and `effective`, with
+  `setOverride` to drive the top layer; `resolved` follows `effective`.
+
 ## 0.2.0
 
 ### Minor Changes
