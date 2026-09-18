@@ -13,6 +13,9 @@ export default defineConfig({
       { find: /^@zkmake\/three-meter$/, replacement: src("index.ts") },
       { find: /^@zkmake\/three-meter\/(ui|react)$/, replacement: src("$1/index.ts") },
     ],
+    // `../../src/react` imports react and fiber; resolve those from this example's node_modules
+    // rather than walking up to the repo root, which a standalone build (Cloudflare Pages) lacks.
+    dedupe: ["react", "react-dom", "@react-three/fiber", "three"],
   },
   server: { port: 3021, strictPort: true },
   // three + react is ~1 MB minified; the warning would fire on every build.
