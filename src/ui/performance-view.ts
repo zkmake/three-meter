@@ -315,23 +315,10 @@ class PerformanceView {
     this.hudGridEl.className = "perf-monitor__hud-grid";
     hud.append(this.hudGraphsEl, this.hudGridEl);
 
+    // Option rows read icon, label, control; the stat rows below keep the
+    // checkbox first, so the two groups scan differently on purpose.
     const options = document.createElement("div");
     options.className = "perf-monitor__section perf-monitor__options";
-
-    const dimRow = document.createElement("label");
-    dimRow.className = "perf-monitor__row";
-
-    this.dimCheckbox = this.buildCheckbox(
-      this.settings.dim,
-      "Dim the performance panel when the pointer leaves",
-      (on) => this.settings.setDim(on),
-    );
-
-    const dimLabel = document.createElement("span");
-    dimLabel.className = "perf-monitor__label";
-    dimLabel.textContent = "dim on leave";
-
-    dimRow.append(this.dimCheckbox, createIcon("blend", "perf-monitor__icon"), dimLabel);
 
     const themeRow = document.createElement("div");
     themeRow.className = "perf-monitor__row perf-monitor__row--static";
@@ -360,7 +347,22 @@ class PerformanceView {
     }
 
     themeRow.append(createIcon("contrast", "perf-monitor__icon"), themeLabel, segment);
-    options.append(dimRow, themeRow);
+
+    const dimRow = document.createElement("label");
+    dimRow.className = "perf-monitor__row";
+
+    this.dimCheckbox = this.buildCheckbox(
+      this.settings.dim,
+      "Dim the performance panel when the pointer leaves",
+      (on) => this.settings.setDim(on),
+    );
+
+    const dimLabel = document.createElement("span");
+    dimLabel.className = "perf-monitor__label";
+    dimLabel.textContent = "dim on leave";
+
+    dimRow.append(createIcon("blend", "perf-monitor__icon"), dimLabel, this.dimCheckbox);
+    options.append(themeRow, dimRow);
 
     const graphs = document.createElement("div");
     graphs.className = "perf-monitor__graphs";
