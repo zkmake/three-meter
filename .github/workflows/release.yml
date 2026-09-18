@@ -1,6 +1,12 @@
 # Changesets release flow. With pending changesets on main it opens (or refreshes) a
 # "Version Packages" PR; merging that PR runs `bun run release`, which builds (tsdown +
-# publint + attw) and publishes with provenance.
+# publint + attw) and publishes with provenance, then pushes the git tag and creates the
+# GitHub release.
+#
+# changesets/action@v2 is required by @changesets/cli v3: the CLI reports what it
+# published through the CHANGESETS_OUTPUT file, which v2 reads. v1 grepped stdout for
+# "New tag:" lines v3 no longer prints, so 0.2.0 and 0.3.0 published fine but got no
+# tag or release.
 #
 # Auth: npm trusted publishing (OIDC). Configure this repo + workflow file as the trusted
 # publisher on npmjs.com under the package's settings. No NPM_TOKEN secret needed once set;
@@ -32,12 +38,12 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: bun install --frozen-lockfile
       - name: Version or publish
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          version: bun run changeset:version
-          publish: bun run release
-          commit: "chore: version packages"
-          title: "chore: version packages"
+          version-script: bun run changeset:version
+          publish-script: bun run release
+          commit-message: "chore: version packages"
+          pr-title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
