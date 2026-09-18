@@ -74,6 +74,7 @@ Canvas is its own React root. To run two canvases on one page, pass the same `st
 | Option             | Default            | Meaning                                                                                      |
 | ------------------ | ------------------ | -------------------------------------------------------------------------------------------- |
 | `mode`             | `"compact"`        | `compact` is the card. `full` is the checkbox list that configures it.                       |
+| `theme`            | `"system"`         | `dark`, `light`, or `system` to follow `prefers-color-scheme` live.                          |
 | `defaultPlacement` | `{ edge: "left" }` | First-visit dock, as `edge` plus `align` of `start`, `center` or `end`. A drag overrides it. |
 | `storageKey`       | `three-meter`      | localStorage key for the selection and the dock. `null` disables persistence.                |
 | `parent`           | `document.body`    | Where the host element is appended.                                                          |
@@ -82,6 +83,24 @@ Canvas is its own React root. To run two canvases on one page, pass the same `st
 
 `PerformanceMonitor` and `PerfSampler` take `trackGPU` (default true), `gpuQueryPoolSize` (default 5)
 and `historySize` (default 120).
+
+## Theme
+
+The HUD ships a dark and a light palette. `theme` picks one, or `system` (the default) follows the
+OS and switches when it does. Change it later from the handle, or from the `PerfHud` prop in React,
+which applies without remounting:
+
+```ts
+const hud = mountPerfHud(monitor, { theme: "system" });
+hud.setTheme("light"); // "dark" | "light" | "system"
+hud.getTheme(); // the mode you asked for
+hud.theme.resolved; // "dark" | "light", what is on screen right now
+hud.theme.subscribe(() => syncMyPageWith(hud.theme.resolved));
+```
+
+The resolved theme lands on `data-theme` of `.perf-hud` and `.perf-monitor`. To restyle either
+palette, override the `--perf-*` custom properties (`bg`, `fg`, `fg-dim`, `muted`, `row`,
+`border`, `accent`, `shadow`) on those selectors.
 
 ## GPU timing
 
@@ -94,8 +113,9 @@ On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a
 
 [`examples/vanilla`](examples/vanilla) is plain three and is what runs at
 [three-meter.pages.dev](https://three-meter.pages.dev/). Add `?webgpu` to use `WebGPURenderer` and
-`?count=` to scale the scene. [`examples/r3f`](examples/r3f) is the React Three Fiber version. Each
-is a Vite app. Run `bun run dev` inside it.
+`?count=` to scale the scene. Its theme toggle drives the HUD through `setTheme` and the page follows
+`hud.theme.resolved`. [`examples/r3f`](examples/r3f) is the React Three Fiber version. Each is a Vite
+app. Run `bun run dev` inside it.
 
 ## Shipping it
 
@@ -109,7 +129,7 @@ your call. Gate the import in the app with a `?debug=` query, a build flag or a 
 
 While a monitor is attached, `renderer.info.autoReset` is off and `begin()` resets `info`. One
 monitor per renderer. A second throws. `dispose()` restores everything. Theme with the `--perf-*`
-custom properties on `.perf-monitor`.
+custom properties on `.perf-hud` and `.perf-monitor`, or the `theme` option.
 
 ## Contributing
 

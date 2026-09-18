@@ -3,9 +3,13 @@
  * tracking so the GPU row is real there too; the default is `WebGLRenderer`,
  * whose GPU row needs `EXT_disjoint_timer_query_webgl2` (Chrome, Edge).
  * `?count=5000` scales the scene to make the numbers move.
+ *
+ * The header's theme toggle drives the HUD through `setTheme`, and the page
+ * follows the HUD's resolved theme, so both flip together (and track the OS in
+ * `system`). The HUD mounts on `system` unless a previous visit chose otherwise.
  */
 import { PerformanceMonitor, wrapAnimationLoop, type PerfRenderer } from "@zkmake/three-meter";
-import { mountPerfHud } from "@zkmake/three-meter/ui";
+import { isThemeMode, mountPerfHud, type ThemeMode } from "@zkmake/three-meter/ui";
 import {
   BoxGeometry,
   Color,
@@ -19,6 +23,8 @@ import {
   WebGLRenderer,
 } from "three";
 
+import "./style.css";
+
 type Loop = (time: number) => void;
 
 type RendererLike = PerfRenderer & {
@@ -29,6 +35,16 @@ type RendererLike = PerfRenderer & {
   render: (scene: Scene, camera: PerspectiveCamera) => unknown;
 };
 
+const THEME_STORAGE_KEY = "three-meter-example:theme";
+const BACKGROUNDS = { dark: "#0f1115", light: "#f3f4f6" } as const;
+const INSTALL_COMMANDS = {
+  bun: "bun add -d @zkmake/three-meter",
+  npm: "npm i -D @zkmake/three-meter",
+  pnpm: "pnpm add -D @zkmake/three-meter",
+} as const;
+
+type PackageManager = keyof typeof INSTALL_COMMANDS;
+
 const params = new URLSearchParams(location.search);
 const useWebgpu = params.has("webgpu");
 const count = Math.max(1, Number(params.get("count") ?? 2000));
@@ -37,6 +53,24 @@ const note = document.querySelector("#note")!;
 note.innerHTML = useWebgpu
   ? 'WebGPU · <a href="./">switch to WebGL</a>'
   : 'WebGL · <a href="?webgpu">switch to WebGPU</a>';
+
+const readStoredTheme = (): ThemeMode => {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+
+    return isThemeMode(stored) ? stored : "system";
+  } catch {
+    return "system";
+  }
+};
+
+const writeStoredTheme = (mode: ThemeMode) => {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch {
+    // The live toggle still applies.
+  }
+};
 
 const createRenderer = async (): Promise<RendererLike> => {
   if (useWebgpu) {
@@ -53,10 +87,10 @@ const createRenderer = async (): Promise<RendererLike> => {
 const renderer = await createRenderer();
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.append(renderer.domElement);
+document.body.prepend(renderer.domElement);
 
 const scene = new Scene();
-scene.background = new Color("#0f1115");
+scene.background = new Color(BACKGROUNDS.dark);
 const camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 6, 18);
 camera.lookAt(0, 0, 0);
@@ -87,7 +121,80 @@ for (let index = 0; index < count; index += 1) {
 scene.add(cubes);
 
 const monitor = new PerformanceMonitor({ renderer });
-mountPerfHud(monitor, { storageKey: "three-meter-example:vanilla" });
+const hud = mountPerfHud(monitor, {
+  storageKey: "three-meter-example:vanilla",
+  theme: readStoredTheme(),
+});
+
+// Site theme: the HUD's resolved theme is the source of truth for the page.
+const themeButtons = [...document.querySelectorAll<HTMLButtonElement>("#theme [data-mode]")];
+
+const paintTheme = () => {
+  const resolved = hud.theme.resolved;
+  document.documentElement.dataset.theme = resolved;
+  (scene.background as Color).set(BACKGROUNDS[resolved]);
+
+  for (const button of themeButtons) {
+    button.setAttribute("aria-checked", String(button.dataset.mode === hud.getTheme()));
+  }
+};
+
+for (const button of themeButtons) {
+  button.addEventListener("click", () => {
+    const mode = button.dataset.mode;
+
+    if (isThemeMode(mode)) {
+      hud.setTheme(mode);
+      writeStoredTheme(mode);
+    }
+  });
+}
+
+hud.theme.subscribe(paintTheme);
+paintTheme();
+
+// Install panel: package-manager tabs and a copy button.
+const commandEl = document.querySelector("#install-command")!;
+const copyButton = document.querySelector<HTMLButtonElement>("#copy")!;
+const pmButtons = [...document.querySelectorAll<HTMLButtonElement>("#pm [data-pm]")];
+let packageManager: PackageManager = "bun";
+
+const paintInstall = () => {
+  commandEl.textContent = INSTALL_COMMANDS[packageManager];
+
+  for (const button of pmButtons) {
+    button.setAttribute("aria-selected", String(button.dataset.pm === packageManager));
+  }
+};
+
+for (const button of pmButtons) {
+  button.addEventListener("click", () => {
+    const pm = button.dataset.pm;
+
+    if (pm && pm in INSTALL_COMMANDS) {
+      packageManager = pm as PackageManager;
+      paintInstall();
+    }
+  });
+}
+
+let copiedTimer = 0;
+copyButton.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(INSTALL_COMMANDS[packageManager]);
+    copyButton.classList.add("is-copied");
+    copyButton.setAttribute("aria-label", "Copied");
+    window.clearTimeout(copiedTimer);
+    copiedTimer = window.setTimeout(() => {
+      copyButton.classList.remove("is-copied");
+      copyButton.setAttribute("aria-label", "Copy install command");
+    }, 1200);
+  } catch {
+    // Clipboard blocked; the command is still selectable.
+  }
+});
+
+paintInstall();
 
 renderer.setAnimationLoop(
   wrapAnimationLoop(monitor, (time) => {

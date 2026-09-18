@@ -2,8 +2,8 @@
  * The floating HUD: a fixed host docked to a screen edge, the metrics card
  * inside it, and two discs on the inward side (drag grip, compact/full toggle)
  * that stay hidden until the pointer is near or someone taps. Dim-on-leave
- * comes from the settings. This is what the React `PerfHud` wraps; a vanilla
- * three app calls it directly.
+ * comes from the settings; the palette from `theme`. This is what the React
+ * `PerfHud` wraps; a vanilla three app calls it directly.
  */
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
 import { type DefaultPlacement, dockPanel } from "./dock-panel.ts";
@@ -11,12 +11,18 @@ import { DEFAULT_STORAGE_KEY, HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
 import { PerformanceView, type PerformanceViewMode } from "./performance-view.ts";
 import { injectStyles } from "./styles.ts";
+import { applyTheme, HudTheme, type ThemeMode } from "./theme.ts";
 
 const TOUCH_LINGER_MS = 2500;
 
 type MountPerfHudOptions = {
   /** Start compact (the card) or full (the checkbox list). Default `compact`. */
   mode?: PerformanceViewMode;
+  /**
+   * `dark`, `light`, or `system` to follow the OS preference. Default
+   * `system`. Change it later with the handle's `setTheme`.
+   */
+  theme?: ThemeMode;
   /** localStorage key for the selection and the dock. `null` disables persistence. */
   storageKey?: string | null;
   /** Bring your own; otherwise one is created from `storageKey`. */
@@ -37,8 +43,12 @@ type PerfHudHandle = {
   element: HTMLDivElement;
   view: PerformanceView;
   settings: HudSettings;
+  /** Subscribe to it for the resolved `dark` / `light` as the OS preference moves. */
+  theme: HudTheme;
   getMode: () => PerformanceViewMode;
   setMode: (mode: PerformanceViewMode) => void;
+  getTheme: () => ThemeMode;
+  setTheme: (mode: ThemeMode) => void;
   dispose: () => void;
 };
 
@@ -58,6 +68,7 @@ const mountPerfHud = (
 ): PerfHudHandle => {
   const storageKey = options.storageKey === undefined ? DEFAULT_STORAGE_KEY : options.storageKey;
   const settings = options.settings ?? new HudSettings({ storageKey });
+  const theme = new HudTheme(options.theme ?? "system");
   const parent = options.parent ?? document.body;
 
   if (options.injectStyles ?? true) {
@@ -68,6 +79,7 @@ const mountPerfHud = (
   host.className = "perf-hud";
   host.dataset.edge = "left";
   host.setAttribute("aria-label", options.label ?? "Performance");
+  applyTheme(host, theme);
 
   const hotspot = document.createElement("div");
   hotspot.className = "perf-hud__hotspot";
@@ -84,6 +96,7 @@ const mountPerfHud = (
     monitor,
     refreshHz: options.refreshHz,
     settings,
+    theme,
   });
 
   host.append(hotspot, tools, view.element);
@@ -100,6 +113,7 @@ const mountPerfHud = (
   applyMode();
   applyDim();
   const unsubscribe = settings.subscribe(applyDim);
+  const unsubscribeTheme = theme.subscribe(() => applyTheme(host, theme));
   const dock = dockPanel(host, {
     defaultPlacement: options.defaultPlacement,
     handle: grip,
@@ -171,14 +185,19 @@ const mountPerfHud = (
       host.removeEventListener("pointerleave", onLeave);
       host.removeEventListener("pointerdown", onDown);
       unsubscribe();
+      unsubscribeTheme();
       dock.dispose();
       view.dispose();
+      theme.dispose();
       host.remove();
     },
     element: host,
     getMode: () => view.getMode(),
     setMode,
+    getTheme: () => theme.mode,
+    setTheme: (mode: ThemeMode) => theme.setMode(mode),
     settings,
+    theme,
     view,
   };
 };
