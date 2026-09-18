@@ -12,6 +12,14 @@ Live demo: [three-meter.pages.dev](https://three-meter.pages.dev/), with a vanil
 React Three Fiber take on the same scene. Add `?webgpu` for the WebGPU renderer and `?count=5000` to
 load the scene up.
 
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png"
+    width="320"
+    alt="The HUD in full mode, dark theme: a theme row (light, system, dark), a dim-on-leave toggle, FPS, CPU and GPU sparklines with live values, and a checkbox list of counters (FPS, calls, CPU, GPU, triangles, lines, points, render passes, geometries, textures, shaders) choosing what the compact card shows. Two discs beside it: a drag grip and the compact/full toggle."
+  />
+</p>
+
 The sampler and the card are separate components, so toggling the HUD never remounts your canvas.
 GPU time is measured on WebGPU as well as WebGL. The counters are draw calls, render passes and
 resource counts, which is what you watch when a scene is instanced. The card docks to a screen edge,
