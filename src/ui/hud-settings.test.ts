@@ -58,6 +58,21 @@ describe("HudSettings", () => {
     expect(new HudSettings({ storageKey: "b" }).isNumberEnabled("calls")).toBe(true);
   });
 
+  test("theme pick is null until set, persists, and drops unknown values", () => {
+    const settings = new HudSettings({ storageKey: "test:theme" });
+    expect(settings.theme).toBeNull();
+    expect(JSON.parse(localStorage.getItem("test:theme") ?? "{}")).not.toHaveProperty("theme");
+
+    settings.setTheme("light");
+    expect(new HudSettings({ storageKey: "test:theme" }).theme).toBe("light");
+
+    settings.setTheme(null);
+    expect(new HudSettings({ storageKey: "test:theme" }).theme).toBeNull();
+
+    localStorage.setItem("test:bogus", JSON.stringify({ theme: "sepia" }));
+    expect(new HudSettings({ storageKey: "test:bogus" }).theme).toBeNull();
+  });
+
   test("null storageKey keeps everything in memory", () => {
     const settings = new HudSettings({ storageKey: null, defaults: { numbers: ["cpu"] } });
     settings.setNumberEnabled("gpu", true);

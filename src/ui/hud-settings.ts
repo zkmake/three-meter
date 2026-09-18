@@ -1,15 +1,18 @@
 /**
- * Which metrics the compact HUD shows, plus the dim-on-leave toggle. One instance per
- * HUD; the full-mode checkboxes and the compact card stay in sync through it.
- * Persists to `localStorage` under `storageKey` (pass `null` to keep it in
- * memory only).
+ * Which metrics the compact HUD shows, the dim-on-leave toggle, and the theme
+ * the person using the HUD picked in the panel (`null` until they pick one,
+ * so the consumer's `theme` option applies). One instance per HUD; the
+ * full-mode controls and the compact card stay in sync through it. Persists
+ * to `localStorage` under `storageKey` (pass `null` to keep it in memory only).
  */
 import type { TimingMetric } from "../core/types.ts";
+import { isThemeMode, type ThemeMode } from "./theme.ts";
 
 type HudSelection = {
   dim: boolean;
   graphs: ReadonlySet<TimingMetric>;
   numbers: ReadonlySet<string>;
+  theme: ThemeMode | null;
 };
 
 type HudDefaults = {
@@ -29,6 +32,7 @@ type MutableSelection = {
   dim: boolean;
   graphs: Set<TimingMetric>;
   numbers: Set<string>;
+  theme: ThemeMode | null;
 };
 
 const DEFAULT_STORAGE_KEY = "three-meter";
@@ -66,6 +70,16 @@ class HudSettings {
 
   setDim(enabled: boolean) {
     this.state.dim = enabled;
+    this.persistAndNotify();
+  }
+
+  /** The user's pick in the panel; `null` means none, so the consumer's option applies. */
+  get theme() {
+    return this.state.theme;
+  }
+
+  setTheme(mode: ThemeMode | null) {
+    this.state.theme = mode;
     this.persistAndNotify();
   }
 
@@ -110,6 +124,7 @@ class HudSettings {
       dim: this.defaults.dim,
       graphs: new Set(this.defaults.graphs),
       numbers: new Set(this.defaults.numbers),
+      theme: null,
     });
 
     if (this.storageKey === null) {
@@ -123,12 +138,18 @@ class HudSettings {
         return fallback();
       }
 
-      const parsed = JSON.parse(raw) as { dim?: boolean; graphs?: string[]; numbers?: string[] };
+      const parsed = JSON.parse(raw) as {
+        dim?: boolean;
+        graphs?: string[];
+        numbers?: string[];
+        theme?: unknown;
+      };
 
       return {
         dim: parsed.dim ?? this.defaults.dim,
         graphs: new Set((parsed.graphs ?? this.defaults.graphs).filter(isTimingMetric)),
         numbers: new Set(parsed.numbers ?? this.defaults.numbers),
+        theme: isThemeMode(parsed.theme) ? parsed.theme : null,
       };
     } catch {
       // Malformed or unavailable storage → defaults.
@@ -145,6 +166,8 @@ class HudSettings {
             dim: this.state.dim,
             graphs: [...this.state.graphs],
             numbers: [...this.state.numbers],
+            // Omitted while null: JSON.stringify drops undefined.
+            theme: this.state.theme ?? undefined,
           }),
         );
       } catch {

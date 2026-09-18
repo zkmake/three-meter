@@ -85,6 +85,39 @@ describe("HudTheme", () => {
     expect(listener).toHaveBeenCalledTimes(2);
   });
 
+  test("a user override wins over the consumer mode until cleared", () => {
+    const theme = new HudTheme("dark");
+    const listener = vi.fn();
+    theme.subscribe(listener);
+
+    theme.setOverride("light");
+    expect(theme.mode).toBe("dark");
+    expect(theme.override).toBe("light");
+    expect(theme.effective).toBe("light");
+    expect(theme.resolved).toBe("light");
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // The consumer changing its mode underneath does not show through.
+    theme.setMode("system");
+    expect(theme.resolved).toBe("light");
+    expect(media.listenerCount()).toBe(0);
+
+    theme.setOverride(null);
+    expect(theme.effective).toBe("system");
+    expect(theme.resolved).toBe("dark");
+    expect(media.listenerCount()).toBe(1);
+  });
+
+  test("an override of system tracks the OS even when the consumer fixed a mode", () => {
+    const theme = new HudTheme("light");
+    theme.setOverride("system");
+    expect(media.listenerCount()).toBe(1);
+    expect(theme.resolved).toBe("dark");
+
+    media.setDark(false);
+    expect(theme.resolved).toBe("light");
+  });
+
   test("dispose releases the media listener", () => {
     const theme = new HudTheme("system");
     expect(media.listenerCount()).toBe(1);

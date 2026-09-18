@@ -20,7 +20,8 @@ type MountPerfHudOptions = {
   mode?: PerformanceViewMode;
   /**
    * `dark`, `light`, or `system` to follow the OS preference. Default
-   * `system`. Change it later with the handle's `setTheme`.
+   * `system`. Change it later with the handle's `setTheme`. A pick made in
+   * the panel's own theme row (kept in `settings`) sits on top of this.
    */
   theme?: ThemeMode;
   /** localStorage key for the selection and the dock. `null` disables persistence. */
@@ -43,11 +44,17 @@ type PerfHudHandle = {
   element: HTMLDivElement;
   view: PerformanceView;
   settings: HudSettings;
-  /** Subscribe to it for the resolved `dark` / `light` as the OS preference moves. */
+  /**
+   * `mode` is the consumer layer, `override` the panel's pick, `effective`
+   * whichever applies, `resolved` the `dark` / `light` on screen. Subscribe
+   * for changes, including the OS preference moving under `system`.
+   */
   theme: HudTheme;
   getMode: () => PerformanceViewMode;
   setMode: (mode: PerformanceViewMode) => void;
+  /** The consumer layer. The panel's pick, if any, is `settings.theme`. */
   getTheme: () => ThemeMode;
+  /** Sets the consumer layer; a pick made in the panel still wins until `settings.setTheme(null)`. */
   setTheme: (mode: ThemeMode) => void;
   dispose: () => void;
 };
@@ -79,7 +86,6 @@ const mountPerfHud = (
   host.className = "perf-hud";
   host.dataset.edge = "left";
   host.setAttribute("aria-label", options.label ?? "Performance");
-  applyTheme(host, theme);
 
   const hotspot = document.createElement("div");
   hotspot.className = "perf-hud__hotspot";
@@ -112,6 +118,8 @@ const mountPerfHud = (
 
   applyMode();
   applyDim();
+  // After the view: constructing it restores the panel's stored theme pick.
+  applyTheme(host, theme);
   const unsubscribe = settings.subscribe(applyDim);
   const unsubscribeTheme = theme.subscribe(() => applyTheme(host, theme));
   const dock = dockPanel(host, {
