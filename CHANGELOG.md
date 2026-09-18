@@ -1,5 +1,16 @@
 # @zkmake/three-meter
 
+## 0.2.0
+
+### Minor Changes
+
+- [#3](https://github.com/zkmake/three-meter/pull/3) [`b451117`](https://github.com/zkmake/three-meter/commit/b451117464bb6d613a36ceb883f469263841b2db) Thanks [@zkmake](https://github.com/zkmake)! - Add a light palette and a `theme` option to `mountPerfHud` and `PerfHud`: `dark`, `light`, or
+  `system` (the default), which follows `prefers-color-scheme` live. The handle gains `getTheme`,
+  `setTheme` and a `theme` controller whose `resolved` value and `subscribe` let a host page follow
+  the HUD. In React the `theme` prop applies without remounting. Every colour in the stylesheet now
+  comes from a `--perf-*` custom property, and the resolved theme lands on `data-theme` of `.perf-hud`
+  and `.perf-monitor`.
+
 ## 0.1.1
 
 ### Patch Changes
