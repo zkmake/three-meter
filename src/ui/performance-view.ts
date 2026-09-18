@@ -3,7 +3,7 @@ import type { Sample, TimingMetric } from "../core/types.ts";
 import { HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
 import { drawSparkline, type SparklineStyle } from "./sparkline.ts";
-import { applyTheme, HudTheme, type ResolvedTheme } from "./theme.ts";
+import { applyTheme, HudTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
 
 type PerformanceViewMode = "full" | "compact";
 
@@ -68,6 +68,12 @@ const TIMINGS: TimingConfig[] = [
     },
     unit: "ms",
   },
+];
+
+const THEME_OPTIONS: { icon: "sun" | "monitor" | "moon"; label: string; mode: ThemeMode }[] = [
+  { icon: "sun", label: "Light theme", mode: "light" },
+  { icon: "monitor", label: "Match the system theme", mode: "system" },
+  { icon: "moon", label: "Dark theme", mode: "dark" },
 ];
 
 const formatCount = (value: number) => value.toLocaleString("en-US");
@@ -157,6 +163,7 @@ class PerformanceView {
   private readonly statValueEls = new Map<string, HTMLElement>();
   private readonly statCheckboxes = new Map<string, HTMLInputElement>();
   private dimCheckbox!: HTMLInputElement;
+  private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
   private hudGraphsEl!: HTMLElement;
   private hudGridEl!: HTMLElement;
   private readonly hudGraphs = new Map<TimingMetric, HudGraph>();
@@ -171,17 +178,19 @@ class PerformanceView {
     this.settings = options.settings ?? new HudSettings();
     this.ownsTheme = !options.theme;
     this.theme = options.theme ?? new HudTheme();
+    // The panel's pick, restored from storage, sits on top of the consumer's mode.
+    this.theme.setOverride(this.settings.theme);
     this.mode = options.mode ?? "full";
     this.minIntervalMs = 1000 / (options.refreshHz ?? 10);
     this.element = document.createElement("div");
     this.element.className = "perf-monitor";
     this.applyModeClass();
-    applyTheme(this.element, this.theme);
     this.resizeObserver = new ResizeObserver(() => this.resizeCanvases());
     this.build();
     this.rebuildHud();
+    this.onThemeChanged();
     this.unsubscribe = this.settings.subscribe(() => this.onSelectionChanged());
-    this.unsubscribeTheme = this.theme.subscribe(() => applyTheme(this.element, this.theme));
+    this.unsubscribeTheme = this.theme.subscribe(() => this.onThemeChanged());
   }
 
   start() {
@@ -323,7 +332,35 @@ class PerformanceView {
     dimLabel.textContent = "dim on leave";
 
     dimRow.append(this.dimCheckbox, createIcon("blend", "perf-monitor__icon"), dimLabel);
-    options.append(dimRow);
+
+    const themeRow = document.createElement("div");
+    themeRow.className = "perf-monitor__row perf-monitor__row--static";
+
+    const themeLabel = document.createElement("span");
+    themeLabel.className = "perf-monitor__label";
+    themeLabel.textContent = "theme";
+
+    const segment = document.createElement("div");
+    segment.className = "perf-monitor__segment";
+    segment.setAttribute("role", "radiogroup");
+    segment.setAttribute("aria-label", "Panel theme");
+
+    for (const option of THEME_OPTIONS) {
+      const radio = document.createElement("button");
+      radio.type = "button";
+      radio.className = "perf-monitor__segment-option";
+      radio.setAttribute("role", "radio");
+      radio.setAttribute("aria-checked", "false");
+      radio.setAttribute("aria-label", option.label);
+      radio.title = option.label;
+      radio.append(createIcon(option.icon, "perf-monitor__icon"));
+      radio.addEventListener("click", () => this.settings.setTheme(option.mode));
+      this.themeRadios.set(option.mode, radio);
+      segment.append(radio);
+    }
+
+    themeRow.append(createIcon("contrast", "perf-monitor__icon"), themeLabel, segment);
+    options.append(dimRow, themeRow);
 
     const graphs = document.createElement("div");
     graphs.className = "perf-monitor__graphs";
@@ -480,7 +517,17 @@ class PerformanceView {
     }
 
     this.dimCheckbox.checked = this.settings.dim;
+    this.theme.setOverride(this.settings.theme);
     this.rebuildHud();
+  }
+
+  /** Repaint the palette and mark the radio matching what applies (pick, else consumer mode). */
+  private onThemeChanged() {
+    applyTheme(this.element, this.theme);
+
+    for (const [mode, radio] of this.themeRadios) {
+      radio.setAttribute("aria-checked", String(mode === this.theme.effective));
+    }
   }
 
   private buildCheckbox(checked: boolean, title: string, onChange: (enabled: boolean) => void) {

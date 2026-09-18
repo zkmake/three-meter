@@ -141,6 +141,54 @@ const PERF_HUD_STYLES = `
   border-bottom: 1px solid var(--perf-border);
 }
 
+.perf-monitor__row--static {
+  cursor: default;
+}
+
+/* Light / system / dark, as a small segmented radio group. */
+.perf-monitor__segment {
+  display: inline-flex;
+  flex: none;
+  gap: 1px;
+  padding: 1px;
+  border-radius: 4px;
+  background: var(--perf-row);
+}
+
+.perf-monitor__segment-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--perf-muted);
+  cursor: pointer;
+}
+
+.perf-monitor__segment-option:hover {
+  color: var(--perf-fg);
+}
+
+.perf-monitor__segment-option[aria-checked="true"] {
+  color: var(--perf-fg);
+  background: var(--perf-border);
+}
+
+.perf-monitor__segment-option:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--perf-accent) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.perf-monitor__segment-option .perf-monitor__icon {
+  width: 11px;
+  height: 11px;
+  color: inherit;
+}
+
 .perf-monitor__checkbox {
   flex: none;
   margin: 0;

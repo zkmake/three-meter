@@ -1,8 +1,13 @@
 /**
  * Dark, light, or follow the OS. One instance per HUD: the floating host and
  * the card inside it both paint `resolved` onto `data-theme`, and the
- * stylesheet picks the palette from that attribute. `system` tracks
- * `prefers-color-scheme` for as long as the instance lives.
+ * stylesheet picks the palette from that attribute.
+ *
+ * Two layers. `mode` is what the consumer asked for (the `theme` option,
+ * `setTheme`). `override` is what the person using the HUD picked in the
+ * panel, kept in `HudSettings`; it wins while set. `effective` is whichever
+ * applies, and `system` there tracks `prefers-color-scheme` for as long as
+ * the instance lives.
  */
 type ThemeMode = "dark" | "light" | "system";
 type ResolvedTheme = Exclude<ThemeMode, "system">;
@@ -15,6 +20,7 @@ const isThemeMode = (value: unknown): value is ThemeMode =>
 
 class HudTheme {
   private current: ThemeMode;
+  private userPick: ThemeMode | null = null;
   private readonly listeners = new Set<() => void>();
   private media: MediaQueryList | null = null;
   private readonly onSchemeChange = () => this.notify();
@@ -24,9 +30,19 @@ class HudTheme {
     this.watch();
   }
 
-  /** What the host asked for. */
+  /** What the consumer asked for. */
   get mode(): ThemeMode {
     return this.current;
+  }
+
+  /** What the person using the HUD picked in the panel, or `null` for no pick. */
+  get override(): ThemeMode | null {
+    return this.userPick;
+  }
+
+  /** The layer that applies: the user's pick if there is one, else the consumer's mode. */
+  get effective(): ThemeMode {
+    return this.userPick ?? this.current;
   }
 
   /**
@@ -35,8 +51,10 @@ class HudTheme {
    * original palette.
    */
   get resolved(): ResolvedTheme {
-    if (this.current !== "system") {
-      return this.current;
+    const effective = this.effective;
+
+    if (effective !== "system") {
+      return effective;
     }
 
     if (!this.media) {
@@ -56,7 +74,17 @@ class HudTheme {
     this.notify();
   }
 
-  /** Fires on `setMode` and, in `system`, whenever the OS preference flips. */
+  setOverride(mode: ThemeMode | null) {
+    if (mode === this.userPick) {
+      return;
+    }
+
+    this.userPick = mode;
+    this.watch();
+    this.notify();
+  }
+
+  /** Fires on `setMode`, `setOverride` and, in `system`, whenever the OS preference flips. */
   subscribe(listener: () => void) {
     this.listeners.add(listener);
 
@@ -72,7 +100,7 @@ class HudTheme {
   }
 
   private watch() {
-    if (this.current !== "system") {
+    if (this.effective !== "system") {
       this.unwatch();
 
       return;

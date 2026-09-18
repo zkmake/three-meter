@@ -71,29 +71,38 @@ Canvas is its own React root. To run two canvases on one page, pass the same `st
 
 `mountPerfHud` and `PerfHud` take:
 
-| Option             | Default            | Meaning                                                                                      |
-| ------------------ | ------------------ | -------------------------------------------------------------------------------------------- |
-| `mode`             | `"compact"`        | `compact` is the card. `full` is the checkbox list that configures it.                       |
-| `theme`            | `"system"`         | `dark`, `light`, or `system` to follow `prefers-color-scheme` live.                          |
-| `defaultPlacement` | `{ edge: "left" }` | First-visit dock, as `edge` plus `align` of `start`, `center` or `end`. A drag overrides it. |
-| `storageKey`       | `three-meter`      | localStorage key for the selection and the dock. `null` disables persistence.                |
-| `parent`           | `document.body`    | Where the host element is appended.                                                          |
-| `injectStyles`     | `true`             | Append the stylesheet once per document.                                                     |
-| `refreshHz`        | `10`               | Repaint rate.                                                                                |
+| Option             | Default            | Meaning                                                                                       |
+| ------------------ | ------------------ | --------------------------------------------------------------------------------------------- |
+| `mode`             | `"compact"`        | `compact` is the card. `full` is the checkbox list that configures it.                        |
+| `theme`            | `"system"`         | `dark`, `light`, or `system` to follow `prefers-color-scheme` live. A pick in the panel wins. |
+| `defaultPlacement` | `{ edge: "left" }` | First-visit dock, as `edge` plus `align` of `start`, `center` or `end`. A drag overrides it.  |
+| `storageKey`       | `three-meter`      | localStorage key for the selection and the dock. `null` disables persistence.                 |
+| `parent`           | `document.body`    | Where the host element is appended.                                                           |
+| `injectStyles`     | `true`             | Append the stylesheet once per document.                                                      |
+| `refreshHz`        | `10`               | Repaint rate.                                                                                 |
 
 `PerformanceMonitor` and `PerfSampler` take `trackGPU` (default true), `gpuQueryPoolSize` (default 5)
 and `historySize` (default 120).
 
 ## Theme
 
-The HUD ships a dark and a light palette. `theme` picks one, or `system` (the default) follows the
-OS and switches when it does. Change it later from the handle, or from the `PerfHud` prop in React,
-which applies without remounting:
+The HUD ships a dark and a light palette. Two layers decide which shows:
+
+1. **The panel's own pick.** The full view has a light / system / dark row. A pick there is kept
+   with the other settings under `storageKey` and wins while set.
+2. **Your `theme` option.** `dark`, `light`, or `system` (the default), which follows the OS and
+   switches when it does. Applies whenever the person using the HUD hasn't picked anything.
+
+Change your layer later from the handle, or from the `PerfHud` prop in React, which applies without
+remounting:
 
 ```ts
 const hud = mountPerfHud(monitor, { theme: "system" });
-hud.setTheme("light"); // "dark" | "light" | "system"
-hud.getTheme(); // the mode you asked for
+hud.setTheme("light"); // your layer: "dark" | "light" | "system"
+hud.getTheme(); // your layer, as asked for
+hud.settings.theme; // the panel's pick, or null
+hud.settings.setTheme(null); // clear the pick so your layer applies again
+hud.theme.effective; // whichever layer is in force
 hud.theme.resolved; // "dark" | "light", what is on screen right now
 hud.theme.subscribe(() => syncMyPageWith(hud.theme.resolved));
 ```
@@ -113,9 +122,9 @@ On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a
 
 [`examples/vanilla`](examples/vanilla) is plain three and is what runs at
 [three-meter.pages.dev](https://three-meter.pages.dev/). Add `?webgpu` to use `WebGPURenderer` and
-`?count=` to scale the scene. Its theme toggle drives the HUD through `setTheme` and the page follows
-`hud.theme.resolved`. [`examples/r3f`](examples/r3f) is the React Three Fiber version. Each is a Vite
-app. Run `bun run dev` inside it.
+`?count=` to scale the scene. Its header toggle sets the page theme and the HUD's `theme` layer
+together; the row inside the panel overrides the HUD alone. [`examples/r3f`](examples/r3f) is the
+React Three Fiber version. Each is a Vite app. Run `bun run dev` inside it.
 
 ## Shipping it
 

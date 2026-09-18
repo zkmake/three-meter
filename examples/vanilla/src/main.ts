@@ -4,12 +4,14 @@
  * whose GPU row needs `EXT_disjoint_timer_query_webgl2` (Chrome, Edge).
  * `?count=5000` scales the scene to make the numbers move.
  *
- * The header's theme toggle drives the HUD through `setTheme`, and the page
- * follows the HUD's resolved theme, so both flip together (and track the OS in
- * `system`). The HUD mounts on `system` unless a previous visit chose otherwise.
+ * The header's theme toggle sets the page's own `HudTheme` and the HUD's
+ * consumer layer through `setTheme`, so both flip together (and track the OS
+ * in `system`). The HUD mounts on `system` unless a previous visit chose
+ * otherwise. A pick in the panel's own theme row overrides the HUD alone; the
+ * page keeps following the header toggle.
  */
 import { PerformanceMonitor, wrapAnimationLoop, type PerfRenderer } from "@zkmake/three-meter";
-import { isThemeMode, mountPerfHud, type ThemeMode } from "@zkmake/three-meter/ui";
+import { HudTheme, isThemeMode, mountPerfHud, type ThemeMode } from "@zkmake/three-meter/ui";
 import {
   BoxGeometry,
   Color,
@@ -121,21 +123,23 @@ for (let index = 0; index < count; index += 1) {
 scene.add(cubes);
 
 const monitor = new PerformanceMonitor({ renderer });
+const pageTheme = new HudTheme(readStoredTheme());
 const hud = mountPerfHud(monitor, {
   storageKey: "three-meter-example:vanilla",
-  theme: readStoredTheme(),
+  theme: pageTheme.mode,
 });
 
-// Site theme: the HUD's resolved theme is the source of truth for the page.
+// Site theme: the page has its own controller so a pick inside the panel
+// restyles the HUD only. The header toggle sets both.
 const themeButtons = [...document.querySelectorAll<HTMLButtonElement>("#theme [data-mode]")];
 
 const paintTheme = () => {
-  const resolved = hud.theme.resolved;
+  const resolved = pageTheme.resolved;
   document.documentElement.dataset.theme = resolved;
   (scene.background as Color).set(BACKGROUNDS[resolved]);
 
   for (const button of themeButtons) {
-    button.setAttribute("aria-checked", String(button.dataset.mode === hud.getTheme()));
+    button.setAttribute("aria-checked", String(button.dataset.mode === pageTheme.mode));
   }
 };
 
@@ -144,13 +148,14 @@ for (const button of themeButtons) {
     const mode = button.dataset.mode;
 
     if (isThemeMode(mode)) {
+      pageTheme.setMode(mode);
       hud.setTheme(mode);
       writeStoredTheme(mode);
     }
   });
 }
 
-hud.theme.subscribe(paintTheme);
+pageTheme.subscribe(paintTheme);
 paintTheme();
 
 // Install panel: package-manager tabs and a copy button.
