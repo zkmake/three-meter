@@ -3,10 +3,65 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>three-meter · demo</title>
+    <title>three-meter · FPS, CPU, GPU and draw-call HUD for three.js</title>
+    <meta
+      name="description"
+      content="Zero-dependency frame metrics for three.js: FPS, CPU and GPU time, draw calls, triangles and resource counts in a small dockable HUD. Works with WebGLRenderer and WebGPURenderer, vanilla or React Three Fiber. Live demo."
+    />
+    <meta name="author" content="Zubin Khavarian" />
+    <link rel="author" href="https://zubin.dev" />
+    <link rel="canonical" href="https://three-meter.pages.dev/" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f3f4f6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="three-meter" />
+    <meta
+      property="og:title"
+      content="three-meter · FPS, CPU, GPU and draw-call HUD for three.js"
+    />
+    <meta
+      property="og:description"
+      content="Zero-dependency frame metrics for three.js with a dockable HUD. WebGL and WebGPU, vanilla or React Three Fiber."
+    />
+    <meta property="og:url" content="https://three-meter.pages.dev/" />
+    <meta property="og:image" content="https://three-meter.pages.dev/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="three-meter: a lemon gauge mark next to the package name"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="three-meter · FPS, CPU, GPU and draw-call HUD for three.js"
+    />
+    <meta
+      name="twitter:description"
+      content="Zero-dependency frame metrics for three.js with a dockable HUD. WebGL and WebGPU, vanilla or React Three Fiber."
+    />
+    <meta name="twitter:image" content="https://three-meter.pages.dev/og.png" />
+
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareSourceCode",
+        "name": "three-meter",
+        "description": "Zero-dependency three.js frame metrics (FPS, CPU, GPU, draw calls) with a dockable HUD. Vanilla three and React Three Fiber adapters.",
+        "url": "https://three-meter.pages.dev/",
+        "codeRepository": "https://github.com/zkmake/three-meter",
+        "programmingLanguage": "TypeScript",
+        "runtimePlatform": "Browser",
+        "license": "https://opensource.org/licenses/MIT",
+        "author": { "@type": "Person", "name": "Zubin Khavarian", "url": "https://zubin.dev" }
+      }
+    </script>
     <script>
       // Resolve the stored theme before first paint so the page doesn't flash.
       // main.ts takes over from here; the key and the values match what it uses.
@@ -23,9 +78,7 @@
 
     <header class="bar">
       <div class="bar__group">
-        <span class="brand">
-          <span class="brand__name">three-meter</span>
-        </span>
+        <h1 class="brand">three-meter</h1>
         <div id="demo" class="segment" role="radiogroup" aria-label="Integration">
           <button
             type="button"
@@ -191,8 +244,25 @@
         </button>
       </div>
       <p class="install__hint">
-        then <code id="install-usage">mountPerfHud(monitor)</code> — see the README for the rest.
+        then <code id="install-usage">mountPerfHud(monitor)</code> — see the
+        <a href="https://github.com/zkmake/three-meter#readme" target="_blank" rel="noreferrer"
+          >README</a
+        >
+        for the rest.
       </p>
+      <footer class="install__footer">
+        <span>Frame metrics for three.js, zero dependencies.</span>
+        <span>
+          by
+          <a href="https://zubin.dev" rel="author noreferrer" target="_blank">Zubin Khavarian</a> ·
+          <a
+            href="https://github.com/zkmake/three-meter/blob/main/LICENSE"
+            target="_blank"
+            rel="noreferrer"
+            >MIT</a
+          >
+        </span>
+      </footer>
     </aside>
 
     <script type="module" src="/src/main.ts"></script>

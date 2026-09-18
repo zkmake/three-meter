@@ -113,7 +113,6 @@ const loadDemo = async (kind: DemoKind) => {
 };
 
 const paintDemo = () => {
-  document.title = `three-meter · ${demoKind === "r3f" ? "react three fiber" : "vanilla three"}`;
   usageEl.textContent = USAGE[demoKind];
 
   const backend = useWebgpu
