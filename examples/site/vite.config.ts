@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// The examples resolve the package straight from `../../src` (bun can't link a workspace root
+// The example resolves the package straight from `../../src` (bun can't link a workspace root
 // into its own members), so editing the library hot-reloads here. Mirrored in tsconfig `paths`.
 const src = (path: string) =>
   decodeURIComponent(new URL(`../../src/${path}`, import.meta.url).pathname);
@@ -14,9 +14,9 @@ export default defineConfig({
       { find: /^@zkmake\/three-meter\/(ui|react)$/, replacement: src("$1/index.ts") },
     ],
   },
-  server: { port: 3022, strictPort: true },
+  server: { port: 3021, strictPort: true },
   // three + react is ~1 MB minified; the warning would fire on every build.
   build: { chunkSizeWarningLimit: 1500 },
-  preview: { port: 3022, strictPort: true },
+  preview: { port: 3021, strictPort: true },
   plugins: [react()],
 });
