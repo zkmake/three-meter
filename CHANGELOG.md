@@ -1,5 +1,13 @@
 # @zkmake/three-meter
 
+## 0.3.1
+
+### Patch Changes
+
+- [#12](https://github.com/zkmake/three-meter/pull/12) [`288f377`](https://github.com/zkmake/three-meter/commit/288f37789efbdee19904ff0ff7b582a008a67275) Thanks [@zkmake](https://github.com/zkmake)! - Counts of 100,000 and up now show in compact notation (`250K`, `1.4M`, `1.2B`) instead of
+  overflowing the compact card's value column into the next label; a scene with a million triangles
+  read `1,076,708` across two cells. Smaller counts keep their exact thousands separators.
+
 ## 0.3.0
 
 ### Minor Changes
