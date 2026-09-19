@@ -1,5 +1,6 @@
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
 import type { Sample, TimingMetric } from "../core/types.ts";
+import { formatCount } from "./format.ts";
 import { HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
 import { drawSparkline, type SparklineStyle } from "./sparkline.ts";
@@ -75,8 +76,6 @@ const THEME_OPTIONS: { icon: "sun" | "monitor" | "moon"; label: string; mode: Th
   { icon: "monitor", label: "Match the system theme", mode: "system" },
   { icon: "moon", label: "Dark theme", mode: "dark" },
 ];
-
-const formatCount = (value: number) => value.toLocaleString("en-US");
 
 const readTiming = (sample: Sample, metric: TimingMetric) => {
   switch (metric) {
