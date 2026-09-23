@@ -28,8 +28,13 @@ type ResourceCounts = {
 };
 
 type Sample = {
+  /** Smoothed. Intervals over a second (hidden tab, breakpoint) are left out. */
   fps: number;
-  /** CPU frame time in ms (JS-side): tick + render dispatch. */
+  /**
+   * JS time in ms from `begin()` to the return of the frame's last `render()`:
+   * your update code plus the render dispatch. Falls back to `end()` when no
+   * render ran.
+   */
   cpu: number;
   gpu: GpuTiming;
   render: RenderCounts;

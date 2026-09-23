@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { PerformanceMonitor } from "./performance-monitor.ts";
 import type { PerfRenderer } from "./types.ts";
@@ -37,7 +37,70 @@ const fakeWebgpu = (): PerfRenderer => ({
   render: () => {},
 });
 
+/** Drive `performance.now()` by hand: each call returns the next value in the script. */
+const scriptClock = (times: number[]) => {
+  const queue = [...times];
+  vi.spyOn(performance, "now").mockImplementation(() => {
+    if (queue.length === 0) {
+      throw new Error("scriptClock ran out of times");
+    }
+
+    return queue.shift()!;
+  });
+};
+
 describe("PerformanceMonitor", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test("CPU runs from begin to the return of the last render, not to end()", () => {
+    const renderer = fakeWebgl();
+    const monitor = new PerformanceMonitor({ renderer, trackGPU: false });
+
+    // begin=0, render returns at 3 and 5, end() reached at 16.7 (next tick).
+    scriptClock([0, 3, 5, 16.7]);
+    monitor.begin();
+    renderer.render();
+    renderer.render();
+    monitor.end();
+
+    expect(monitor.getSample().cpu).toBeCloseTo(5);
+    monitor.dispose();
+  });
+
+  test("CPU falls back to end() when the frame did not render", () => {
+    const monitor = new PerformanceMonitor({ renderer: fakeWebgl(), trackGPU: false });
+
+    scriptClock([100, 104]);
+    monitor.begin();
+    monitor.end();
+
+    expect(monitor.getSample().cpu).toBeCloseTo(4);
+    monitor.dispose();
+  });
+
+  test("FPS follows the tick interval and ignores stalls over a second", () => {
+    const monitor = new PerformanceMonitor({ renderer: fakeWebgl(), trackGPU: false });
+
+    // Two 16 ms frames, then a 5 s gap (hidden tab), then a 16 ms frame.
+    scriptClock([0, 0, 16, 16, 32, 32, 5032, 5032, 5048, 5048]);
+
+    for (let index = 0; index < 5; index += 1) {
+      monitor.begin();
+      monitor.end();
+    }
+
+    const fps = monitor.getHistory("fps");
+    expect(fps[1]).toBeCloseTo(62.5);
+    expect(fps[2]).toBeCloseTo(62.5);
+    // The stall frame repeats the previous reading instead of logging ~0.2 fps.
+    expect(fps[3]).toBeCloseTo(62.5);
+    expect(fps[4]).toBeCloseTo(62.5);
+    expect(monitor.getSample().fps).toBeGreaterThan(30);
+    monitor.dispose();
+  });
+
   test("counts render passes between begin and end, and reads WebGL fields", () => {
     const renderer = fakeWebgl();
     const monitor = new PerformanceMonitor({ renderer, trackGPU: false });

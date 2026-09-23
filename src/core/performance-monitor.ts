@@ -7,6 +7,12 @@ const DEFAULT_GPU_POOL_SIZE = 5;
 const ATTACHED = new WeakSet<PerfRenderer>();
 const DEFAULT_HISTORY_SIZE = 120;
 const FPS_SMOOTHING = 0.1;
+/**
+ * A frame interval past this is a stall (hidden tab, breakpoint, laptop lid),
+ * not a slow frame. It is left out of FPS so one gap doesn't flatten the
+ * graph's scale for the whole history window.
+ */
+const STALL_MS = 1000;
 
 const frameCalls = (info: PerfRenderer["info"]) => info.render.drawCalls ?? info.render.calls;
 
@@ -22,12 +28,18 @@ const programCount = (info: PerfRenderer["info"]) =>
  * While attached, `renderer.info.autoReset` is off and `info` is reset in
  * {@link begin}; host code that reads `renderer.info` mid-frame sees this
  * frame's counts only. {@link dispose} restores both.
+ *
+ * CPU time runs from {@link begin} to the return of the frame's last
+ * `render()` call, which the `render` patch stamps. So it holds even when
+ * {@link end} is only reached on the next tick, as in the R3F sampler: it is
+ * the JS work of the frame, not the interval to the next one.
  */
 class PerformanceMonitor {
   private readonly renderer: PerfRenderer;
   private readonly gpuTimer: GpuTimer | null;
   private readonly originalRender: PerfRenderer["render"];
   private renderPasses = 0;
+  private lastRenderEndAt: number | null = null;
   private readonly fpsHistory: RingBuffer;
   private readonly cpuHistory: RingBuffer;
   private readonly gpuHistory: RingBuffer;
@@ -59,7 +71,11 @@ class PerformanceMonitor {
     renderer.render = (...args: never[]) => {
       this.renderPasses += 1;
 
-      return this.originalRender.apply(renderer, args);
+      try {
+        return this.originalRender.apply(renderer, args);
+      } finally {
+        this.lastRenderEndAt = performance.now();
+      }
     };
 
     this.gpuTimer = trackGPU ? GpuTimer.create(renderer, gpuQueryPoolSize) : null;
@@ -74,11 +90,16 @@ class PerformanceMonitor {
 
     if (this.lastBeginAt !== null) {
       const frameMs = now - this.lastBeginAt;
-      this.frameFps = frameMs > 0 ? 1000 / frameMs : 0;
+
+      // A stall keeps the previous reading rather than logging a near-zero frame.
+      if (frameMs > 0 && frameMs <= STALL_MS) {
+        this.frameFps = 1000 / frameMs;
+      }
     }
 
     this.lastBeginAt = now;
     this.cpuStart = now;
+    this.lastRenderEndAt = null;
     this.renderPasses = 0;
     this.renderer.info.reset();
     this.gpuTimer?.begin();
@@ -86,7 +107,8 @@ class PerformanceMonitor {
 
   end() {
     const now = performance.now();
-    const cpu = now - this.cpuStart;
+    // Without a render this frame there is nothing better than "until end()".
+    const cpu = (this.lastRenderEndAt ?? now) - this.cpuStart;
 
     this.gpuTimer?.end();
     this.gpuTimer?.poll();
