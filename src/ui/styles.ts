@@ -255,13 +255,88 @@ const PERF_HUD_STYLES = `
   text-align: right;
 }
 
+.perf-monitor__footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 6px 0;
+  border-top: 1px solid var(--perf-border);
+  color: var(--perf-muted);
+  font-size: 10px;
+}
+
+.perf-monitor__footer-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.perf-monitor__footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.perf-monitor__footer-row[hidden],
+.perf-monitor__badge[hidden] {
+  display: none;
+}
+
+.perf-monitor__footer-gpu {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--perf-fg-dim);
+}
+
+.perf-monitor__badge {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid var(--perf-border);
+  border-radius: 3px;
+  color: var(--perf-fg-dim);
+  letter-spacing: 0.04em;
+}
+
+.perf-monitor__badge.is-fallback {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.perf-monitor[data-theme="light"] .perf-monitor__badge.is-fallback {
+  border-color: #d97706;
+  color: #b45309;
+}
+
+.perf-monitor__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.perf-monitor__link:hover,
+.perf-monitor__link:focus-visible {
+  color: var(--perf-accent);
+  text-decoration: underline;
+}
+
 .perf-monitor--full .perf-monitor__hud {
   display: none;
 }
 
 .perf-monitor--compact .perf-monitor__graphs,
-.perf-monitor--compact .perf-monitor__section {
+.perf-monitor--compact .perf-monitor__section,
+.perf-monitor--compact:not(.perf-monitor--info) .perf-monitor__footer,
+.perf-monitor--compact .perf-monitor__footer > .perf-monitor__checkbox {
   display: none;
+}
+
+.perf-monitor--compact .perf-monitor__footer {
+  padding: 6px 2px 2px;
 }
 
 .perf-monitor--compact {

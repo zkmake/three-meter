@@ -1,5 +1,6 @@
 /**
- * Which metrics the compact HUD shows, the dim-on-leave toggle, and the theme
+ * Which metrics the compact HUD shows, whether it shows the environment
+ * footer, the dim-on-leave toggle, and the theme
  * the person using the HUD picked in the panel (`null` until they pick one,
  * so the consumer's `theme` option applies). One instance per HUD; the
  * full-mode controls and the compact card stay in sync through it. Persists
@@ -11,6 +12,8 @@ import { isThemeMode, type ThemeMode } from "./theme.ts";
 type HudSelection = {
   dim: boolean;
   graphs: ReadonlySet<TimingMetric>;
+  /** Version, three revision, backend and GPU footer in the compact HUD. */
+  info: boolean;
   numbers: ReadonlySet<string>;
   theme: ThemeMode | null;
 };
@@ -18,6 +21,7 @@ type HudSelection = {
 type HudDefaults = {
   dim?: boolean;
   graphs?: readonly TimingMetric[];
+  info?: boolean;
   numbers?: readonly string[];
 };
 
@@ -31,12 +35,14 @@ type HudSettingsOptions = {
 type MutableSelection = {
   dim: boolean;
   graphs: Set<TimingMetric>;
+  info: boolean;
   numbers: Set<string>;
   theme: ThemeMode | null;
 };
 
 const DEFAULT_STORAGE_KEY = "three-meter";
 const DEFAULT_DIM = false;
+const DEFAULT_INFO = false;
 const DEFAULT_NUMBERS: readonly string[] = ["fps", "calls", "cpu", "gpu"];
 const DEFAULT_GRAPHS: readonly TimingMetric[] = [];
 const TIMING_METRICS = new Set<TimingMetric>(["fps", "cpu", "gpu"]);
@@ -55,6 +61,7 @@ class HudSettings {
     this.defaults = {
       dim: options.defaults?.dim ?? DEFAULT_DIM,
       graphs: options.defaults?.graphs ?? DEFAULT_GRAPHS,
+      info: options.defaults?.info ?? DEFAULT_INFO,
       numbers: options.defaults?.numbers ?? DEFAULT_NUMBERS,
     };
     this.state = this.load();
@@ -70,6 +77,15 @@ class HudSettings {
 
   setDim(enabled: boolean) {
     this.state.dim = enabled;
+    this.persistAndNotify();
+  }
+
+  get info() {
+    return this.state.info;
+  }
+
+  setInfo(enabled: boolean) {
+    this.state.info = enabled;
     this.persistAndNotify();
   }
 
@@ -123,6 +139,7 @@ class HudSettings {
     const fallback = (): MutableSelection => ({
       dim: this.defaults.dim,
       graphs: new Set(this.defaults.graphs),
+      info: this.defaults.info,
       numbers: new Set(this.defaults.numbers),
       theme: null,
     });
@@ -141,6 +158,7 @@ class HudSettings {
       const parsed = JSON.parse(raw) as {
         dim?: boolean;
         graphs?: string[];
+        info?: boolean;
         numbers?: string[];
         theme?: unknown;
       };
@@ -148,6 +166,7 @@ class HudSettings {
       return {
         dim: parsed.dim ?? this.defaults.dim,
         graphs: new Set((parsed.graphs ?? this.defaults.graphs).filter(isTimingMetric)),
+        info: parsed.info ?? this.defaults.info,
         numbers: new Set(parsed.numbers ?? this.defaults.numbers),
         theme: isThemeMode(parsed.theme) ? parsed.theme : null,
       };
@@ -165,6 +184,7 @@ class HudSettings {
           JSON.stringify({
             dim: this.state.dim,
             graphs: [...this.state.graphs],
+            info: this.state.info,
             numbers: [...this.state.numbers],
             // Omitted while null: JSON.stringify drops undefined.
             theme: this.state.theme ?? undefined,

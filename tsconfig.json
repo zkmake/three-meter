@@ -9,6 +9,7 @@
     "moduleResolution": "Bundler",
     "customConditions": ["development"],
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,

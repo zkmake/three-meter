@@ -1,5 +1,6 @@
+import { version } from "../../package.json";
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
-import type { Sample, TimingMetric } from "../core/types.ts";
+import type { Environment, Sample, TimingMetric } from "../core/types.ts";
 import { formatCount } from "./format.ts";
 import { HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
@@ -76,6 +77,20 @@ const THEME_OPTIONS: { icon: "sun" | "monitor" | "moon"; label: string; mode: Th
   { icon: "monitor", label: "Match the system theme", mode: "system" },
   { icon: "moon", label: "Dark theme", mode: "dark" },
 ];
+
+const RELEASE_URL = `https://github.com/zkmake/three-meter/releases/tag/v${version}`;
+
+const BACKEND_LABELS = { webgl: "WebGL", webgl2: "WebGL2", webgpu: "WebGPU" } as const;
+
+const backendLabel = (environment: Environment) => {
+  if (!environment.backend) {
+    return "";
+  }
+
+  const label = BACKEND_LABELS[environment.backend];
+
+  return environment.fallback ? `${label} fallback` : label;
+};
 
 const readTiming = (sample: Sample, metric: TimingMetric) => {
   switch (metric) {
@@ -162,7 +177,13 @@ class PerformanceView {
   private readonly statValueEls = new Map<string, HTMLElement>();
   private readonly statCheckboxes = new Map<string, HTMLInputElement>();
   private dimCheckbox!: HTMLInputElement;
+  private infoCheckbox!: HTMLInputElement;
   private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
+  private footerThreeEl!: HTMLElement;
+  private footerHardwareEl!: HTMLElement;
+  private footerBackendEl!: HTMLElement;
+  private footerGpuEl!: HTMLElement;
+  private lastEnvironmentKey = "";
   private hudGraphsEl!: HTMLElement;
   private hudGridEl!: HTMLElement;
   private readonly hudGraphs = new Map<TimingMetric, HudGraph>();
@@ -186,6 +207,7 @@ class PerformanceView {
     this.applyModeClass();
     this.resizeObserver = new ResizeObserver(() => this.resizeCanvases());
     this.build();
+    this.applyInfoClass();
     this.rebuildHud();
     this.onThemeChanged();
     this.unsubscribe = this.settings.subscribe(() => this.onSelectionChanged());
@@ -249,6 +271,10 @@ class PerformanceView {
     if (this.mode === "compact") {
       this.renderHud(sample);
 
+      if (this.settings.info) {
+        this.renderFooter();
+      }
+
       return;
     }
 
@@ -272,6 +298,33 @@ class PerformanceView {
     for (const config of NUMBERS) {
       this.statValueEls.get(config.key)!.textContent = config.read(sample);
     }
+
+    this.renderFooter();
+  }
+
+  /** The monitor caches the environment once its backend settles; until then this re-reads. */
+  private renderFooter() {
+    const environment = this.monitor.getEnvironment();
+    const three = environment.three ? `three r${environment.three}` : "";
+    const backend = backendLabel(environment);
+    const gpu = environment.gpu ?? "";
+    const key = `${three}\n${backend}\n${gpu}`;
+
+    if (key === this.lastEnvironmentKey) {
+      return;
+    }
+
+    this.lastEnvironmentKey = key;
+    this.footerThreeEl.textContent = three;
+    this.footerBackendEl.textContent = backend;
+    this.footerBackendEl.hidden = backend === "";
+    this.footerBackendEl.title = environment.fallback
+      ? "WebGPURenderer couldn't get WebGPU and fell back to WebGL2"
+      : "";
+    this.footerBackendEl.classList.toggle("is-fallback", environment.fallback);
+    this.footerGpuEl.textContent = gpu;
+    this.footerGpuEl.title = gpu;
+    this.footerHardwareEl.hidden = backend === "" && gpu === "";
   }
 
   private renderHud(sample: Sample) {
@@ -435,7 +488,49 @@ class PerformanceView {
       stats.append(rowEl);
     }
 
-    this.element.append(hud, options, graphs, stats);
+    // Checkbox first like the stat rows; the checkbox hides in compact, the rows don't.
+    const footer = document.createElement("div");
+    footer.className = "perf-monitor__footer";
+
+    this.infoCheckbox = this.buildCheckbox(
+      this.settings.info,
+      "Show version and environment in HUD",
+      (on) => this.settings.setInfo(on),
+    );
+
+    const footerBody = document.createElement("div");
+    footerBody.className = "perf-monitor__footer-body";
+
+    // Software on the first row, hardware on the second.
+    const softwareRow = document.createElement("div");
+    softwareRow.className = "perf-monitor__footer-row";
+
+    const release = document.createElement("a");
+    release.className = "perf-monitor__link";
+    release.href = RELEASE_URL;
+    release.target = "_blank";
+    release.rel = "noopener noreferrer";
+    release.title = `Release notes for v${version}`;
+    release.textContent = `three-meter v${version}`;
+
+    this.footerThreeEl = document.createElement("span");
+    softwareRow.append(release, this.footerThreeEl);
+
+    this.footerHardwareEl = document.createElement("div");
+    this.footerHardwareEl.className = "perf-monitor__footer-row";
+    this.footerHardwareEl.hidden = true;
+
+    this.footerBackendEl = document.createElement("span");
+    this.footerBackendEl.className = "perf-monitor__badge";
+
+    this.footerGpuEl = document.createElement("span");
+    this.footerGpuEl.className = "perf-monitor__footer-gpu";
+
+    this.footerHardwareEl.append(this.footerBackendEl, this.footerGpuEl);
+    footerBody.append(softwareRow, this.footerHardwareEl);
+    footer.append(this.infoCheckbox, footerBody);
+
+    this.element.append(hud, options, graphs, stats, footer);
   }
 
   private rebuildHud() {
@@ -518,6 +613,8 @@ class PerformanceView {
     }
 
     this.dimCheckbox.checked = this.settings.dim;
+    this.infoCheckbox.checked = this.settings.info;
+    this.applyInfoClass();
     this.theme.setOverride(this.settings.theme);
     this.rebuildHud();
   }
@@ -541,6 +638,10 @@ class PerformanceView {
     checkbox.addEventListener("change", () => onChange(checkbox.checked));
 
     return checkbox;
+  }
+
+  private applyInfoClass() {
+    this.element.classList.toggle("perf-monitor--info", this.settings.info);
   }
 
   private applyModeClass() {

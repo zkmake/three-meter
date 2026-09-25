@@ -127,6 +127,22 @@ and Firefox don't, so the GPU row shows `—` and `sample.gpu.available` is `fal
 
 On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a frame or two late.
 
+## Environment
+
+The full view's footer has two rows: the three-meter version (linked to its release notes) and the
+three revision, then the backend and the GPU name. An amber `WebGL2 fallback` badge means
+`WebGPURenderer` couldn't get WebGPU. Its checkbox (off by default) shows the footer in the compact
+HUD too. The same data is on the monitor:
+
+```ts
+monitor.getEnvironment();
+// { three: "186", backend: "webgpu", fallback: false, gpu: "Apple metal-3" }
+```
+
+`backend` is `null` until `WebGPURenderer.init()` settles. `gpu` comes from WebGPU's adapter info or
+WebGL's unmasked renderer string, and is `null` where the browser hides it. Chrome's WebGPU gives
+vendor and architecture, not the model.
+
 ## Examples
 
 [`examples/site`](examples/site) is what runs at [three-meter.pages.dev](https://three-meter.pages.dev/):
