@@ -1,5 +1,11 @@
 # @zkmake/three-meter
 
+## 0.4.0
+
+### Minor Changes
+
+- [#16](https://github.com/zkmake/three-meter/pull/16) [`06196be`](https://github.com/zkmake/three-meter/commit/06196be79df418912319a5430e6b006e57663092) Thanks [@zkmake](https://github.com/zkmake)! - Expanded HUD gets a footer: three-meter version (linked to its release notes), three revision, rendering backend (flagging a `WebGPURenderer` fallback to WebGL2) and GPU name. `PerformanceMonitor.getEnvironment()` exposes the same data. A checkbox, off by default, shows the footer in the compact HUD too.
+
 ## 0.3.2
 
 ### Patch Changes
