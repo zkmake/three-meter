@@ -263,6 +263,23 @@ const PERF_HUD_STYLES = `
   text-align: center;
 }
 
+.perf-monitor__footer-gpu {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perf-monitor__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.perf-monitor__link:hover,
+.perf-monitor__link:focus-visible {
+  color: var(--perf-accent);
+  text-decoration: underline;
+}
+
 .perf-monitor--full .perf-monitor__hud {
   display: none;
 }

@@ -41,6 +41,21 @@ type Sample = {
   resources: ResourceCounts;
 };
 
+/** `webgl` is WebGL 1, which three dropped in r163. */
+type RenderBackend = "webgpu" | "webgl2" | "webgl";
+
+/** What the monitor is running on, for bug reports. `null` where it can't be read. */
+type Environment = {
+  /** `null` until `WebGPURenderer` finishes `init()`. */
+  backend: RenderBackend | null;
+  /** `WebGPURenderer` asked for WebGPU and fell back to its WebGL2 backend. */
+  fallback: boolean;
+  /** Adapter or unmasked renderer name, e.g. `Apple M3 Pro`. Browsers may hide it. */
+  gpu: string | null;
+  /** three's revision from `window.__THREE__`, e.g. `"186"`. */
+  three: string | null;
+};
+
 /**
  * The slice of a three renderer the monitor needs. WebGPU's `info.render` uses
  * `drawCalls` for this frame; WebGL's uses `calls`. `programs` is a cache array
@@ -80,9 +95,11 @@ type PerformanceMonitorOptions = {
 };
 
 export type {
+  Environment,
   GpuTiming,
   PerfRenderer,
   PerformanceMonitorOptions,
+  RenderBackend,
   RenderCounts,
   ResourceCounts,
   Sample,

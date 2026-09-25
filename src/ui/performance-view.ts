@@ -1,6 +1,6 @@
 import { version } from "../../package.json";
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
-import type { Sample, TimingMetric } from "../core/types.ts";
+import type { Environment, Sample, TimingMetric } from "../core/types.ts";
 import { formatCount } from "./format.ts";
 import { HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
@@ -77,6 +77,26 @@ const THEME_OPTIONS: { icon: "sun" | "monitor" | "moon"; label: string; mode: Th
   { icon: "monitor", label: "Match the system theme", mode: "system" },
   { icon: "moon", label: "Dark theme", mode: "dark" },
 ];
+
+const RELEASE_URL = `https://github.com/zkmake/three-meter/releases/tag/v${version}`;
+
+const BACKEND_LABELS = { webgl: "WebGL", webgl2: "WebGL2", webgpu: "WebGPU" } as const;
+
+/** `three r186 · WebGPU`, leaving out whatever can't be read yet. */
+const describeEnvironment = (environment: Environment) => {
+  const parts: string[] = [];
+
+  if (environment.three) {
+    parts.push(`three r${environment.three}`);
+  }
+
+  if (environment.backend) {
+    const label = BACKEND_LABELS[environment.backend];
+    parts.push(environment.fallback ? `${label} (fallback)` : label);
+  }
+
+  return parts.join(" · ");
+};
 
 const readTiming = (sample: Sample, metric: TimingMetric) => {
   switch (metric) {
@@ -164,6 +184,9 @@ class PerformanceView {
   private readonly statCheckboxes = new Map<string, HTMLInputElement>();
   private dimCheckbox!: HTMLInputElement;
   private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
+  private footerMetaEl!: HTMLElement;
+  private footerGpuEl!: HTMLElement;
+  private lastEnvironmentKey = "";
   private hudGraphsEl!: HTMLElement;
   private hudGridEl!: HTMLElement;
   private readonly hudGraphs = new Map<TimingMetric, HudGraph>();
@@ -273,6 +296,26 @@ class PerformanceView {
     for (const config of NUMBERS) {
       this.statValueEls.get(config.key)!.textContent = config.read(sample);
     }
+
+    this.renderFooter();
+  }
+
+  /** The monitor caches the environment once its backend settles; until then this re-reads. */
+  private renderFooter() {
+    const environment = this.monitor.getEnvironment();
+    const meta = describeEnvironment(environment);
+    const gpu = environment.gpu ?? "";
+    const key = `${meta}\n${gpu}`;
+
+    if (key === this.lastEnvironmentKey) {
+      return;
+    }
+
+    this.lastEnvironmentKey = key;
+    this.footerMetaEl.textContent = meta === "" ? "" : ` · ${meta}`;
+    this.footerGpuEl.textContent = gpu;
+    this.footerGpuEl.title = gpu;
+    this.footerGpuEl.hidden = gpu === "";
   }
 
   private renderHud(sample: Sample) {
@@ -438,7 +481,25 @@ class PerformanceView {
 
     const footer = document.createElement("div");
     footer.className = "perf-monitor__footer";
-    footer.textContent = `three-meter v${version}`;
+
+    const footerLine = document.createElement("div");
+
+    const release = document.createElement("a");
+    release.className = "perf-monitor__link";
+    release.href = RELEASE_URL;
+    release.target = "_blank";
+    release.rel = "noopener noreferrer";
+    release.title = `Release notes for v${version}`;
+    release.textContent = `three-meter v${version}`;
+
+    this.footerMetaEl = document.createElement("span");
+    footerLine.append(release, this.footerMetaEl);
+
+    this.footerGpuEl = document.createElement("div");
+    this.footerGpuEl.className = "perf-monitor__footer-gpu";
+    this.footerGpuEl.hidden = true;
+
+    footer.append(footerLine, this.footerGpuEl);
 
     this.element.append(hud, options, graphs, stats, footer);
   }

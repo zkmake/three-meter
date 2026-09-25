@@ -1,6 +1,13 @@
+import { readEnvironment } from "./environment.ts";
 import { GpuTimer } from "./gpu-timer.ts";
 import { RingBuffer } from "./ring-buffer.ts";
-import type { PerfRenderer, PerformanceMonitorOptions, Sample, TimingMetric } from "./types.ts";
+import type {
+  Environment,
+  PerfRenderer,
+  PerformanceMonitorOptions,
+  Sample,
+  TimingMetric,
+} from "./types.ts";
 
 const DEFAULT_GPU_POOL_SIZE = 5;
 /** One monitor per renderer: a second would stack the `render` patch and double-count passes. */
@@ -48,6 +55,7 @@ class PerformanceMonitor {
   private frameFps = 0;
   private smoothedFps = 0;
   private sample: Sample;
+  private environment: Environment | null = null;
 
   constructor(options: PerformanceMonitorOptions) {
     const {
@@ -158,6 +166,25 @@ class PerformanceMonitor {
       case "gpu":
         return this.gpuHistory.toArray();
     }
+  }
+
+  /**
+   * three revision, backend and GPU name. Cached once the backend is known;
+   * before `WebGPURenderer.init()` settles it, `backend` is `null` and the
+   * next call reads again.
+   */
+  getEnvironment(): Environment {
+    if (this.environment) {
+      return this.environment;
+    }
+
+    const environment = Object.freeze(readEnvironment(this.renderer));
+
+    if (environment.backend !== null) {
+      this.environment = environment;
+    }
+
+    return environment;
   }
 
   dispose() {
