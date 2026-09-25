@@ -129,9 +129,9 @@ On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a
 
 ## Environment
 
-The full view's footer shows the three-meter version (linked to its release notes), the three
-revision, the backend and the GPU name. `WebGL2 (fallback)` means `WebGPURenderer` couldn't get
-WebGPU. The same data is on the monitor:
+The full view's footer has two rows: the three-meter version (linked to its release notes) and the
+three revision, then the backend and the GPU name. An amber `WebGL2 fallback` badge means
+`WebGPURenderer` couldn't get WebGPU. The same data is on the monitor:
 
 ```ts
 monitor.getEnvironment();

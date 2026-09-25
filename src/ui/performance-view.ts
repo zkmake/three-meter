@@ -82,20 +82,14 @@ const RELEASE_URL = `https://github.com/zkmake/three-meter/releases/tag/v${versi
 
 const BACKEND_LABELS = { webgl: "WebGL", webgl2: "WebGL2", webgpu: "WebGPU" } as const;
 
-/** `three r186 · WebGPU`, leaving out whatever can't be read yet. */
-const describeEnvironment = (environment: Environment) => {
-  const parts: string[] = [];
-
-  if (environment.three) {
-    parts.push(`three r${environment.three}`);
+const backendLabel = (environment: Environment) => {
+  if (!environment.backend) {
+    return "";
   }
 
-  if (environment.backend) {
-    const label = BACKEND_LABELS[environment.backend];
-    parts.push(environment.fallback ? `${label} (fallback)` : label);
-  }
+  const label = BACKEND_LABELS[environment.backend];
 
-  return parts.join(" · ");
+  return environment.fallback ? `${label} fallback` : label;
 };
 
 const readTiming = (sample: Sample, metric: TimingMetric) => {
@@ -184,7 +178,9 @@ class PerformanceView {
   private readonly statCheckboxes = new Map<string, HTMLInputElement>();
   private dimCheckbox!: HTMLInputElement;
   private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
-  private footerMetaEl!: HTMLElement;
+  private footerThreeEl!: HTMLElement;
+  private footerHardwareEl!: HTMLElement;
+  private footerBackendEl!: HTMLElement;
   private footerGpuEl!: HTMLElement;
   private lastEnvironmentKey = "";
   private hudGraphsEl!: HTMLElement;
@@ -303,19 +299,26 @@ class PerformanceView {
   /** The monitor caches the environment once its backend settles; until then this re-reads. */
   private renderFooter() {
     const environment = this.monitor.getEnvironment();
-    const meta = describeEnvironment(environment);
+    const three = environment.three ? `three r${environment.three}` : "";
+    const backend = backendLabel(environment);
     const gpu = environment.gpu ?? "";
-    const key = `${meta}\n${gpu}`;
+    const key = `${three}\n${backend}\n${gpu}`;
 
     if (key === this.lastEnvironmentKey) {
       return;
     }
 
     this.lastEnvironmentKey = key;
-    this.footerMetaEl.textContent = meta === "" ? "" : ` · ${meta}`;
+    this.footerThreeEl.textContent = three;
+    this.footerBackendEl.textContent = backend;
+    this.footerBackendEl.hidden = backend === "";
+    this.footerBackendEl.title = environment.fallback
+      ? "WebGPURenderer couldn't get WebGPU and fell back to WebGL2"
+      : "";
+    this.footerBackendEl.classList.toggle("is-fallback", environment.fallback);
     this.footerGpuEl.textContent = gpu;
     this.footerGpuEl.title = gpu;
-    this.footerGpuEl.hidden = gpu === "";
+    this.footerHardwareEl.hidden = backend === "" && gpu === "";
   }
 
   private renderHud(sample: Sample) {
@@ -482,7 +485,9 @@ class PerformanceView {
     const footer = document.createElement("div");
     footer.className = "perf-monitor__footer";
 
-    const footerLine = document.createElement("div");
+    // Software on the first row, hardware on the second.
+    const softwareRow = document.createElement("div");
+    softwareRow.className = "perf-monitor__footer-row";
 
     const release = document.createElement("a");
     release.className = "perf-monitor__link";
@@ -492,14 +497,21 @@ class PerformanceView {
     release.title = `Release notes for v${version}`;
     release.textContent = `three-meter v${version}`;
 
-    this.footerMetaEl = document.createElement("span");
-    footerLine.append(release, this.footerMetaEl);
+    this.footerThreeEl = document.createElement("span");
+    softwareRow.append(release, this.footerThreeEl);
 
-    this.footerGpuEl = document.createElement("div");
+    this.footerHardwareEl = document.createElement("div");
+    this.footerHardwareEl.className = "perf-monitor__footer-row";
+    this.footerHardwareEl.hidden = true;
+
+    this.footerBackendEl = document.createElement("span");
+    this.footerBackendEl.className = "perf-monitor__badge";
+
+    this.footerGpuEl = document.createElement("span");
     this.footerGpuEl.className = "perf-monitor__footer-gpu";
-    this.footerGpuEl.hidden = true;
 
-    footer.append(footerLine, this.footerGpuEl);
+    this.footerHardwareEl.append(this.footerBackendEl, this.footerGpuEl);
+    footer.append(softwareRow, this.footerHardwareEl);
 
     this.element.append(hud, options, graphs, stats, footer);
   }

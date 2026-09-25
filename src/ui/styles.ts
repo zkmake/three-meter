@@ -256,17 +256,53 @@ const PERF_HUD_STYLES = `
 }
 
 .perf-monitor__footer {
-  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 6px 0;
   border-top: 1px solid var(--perf-border);
   color: var(--perf-muted);
   font-size: 10px;
-  text-align: center;
+}
+
+.perf-monitor__footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.perf-monitor__footer-row[hidden],
+.perf-monitor__badge[hidden] {
+  display: none;
 }
 
 .perf-monitor__footer-gpu {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--perf-fg-dim);
+}
+
+.perf-monitor__badge {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid var(--perf-border);
+  border-radius: 3px;
+  color: var(--perf-fg-dim);
+  letter-spacing: 0.04em;
+}
+
+.perf-monitor__badge.is-fallback {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.perf-monitor[data-theme="light"] .perf-monitor__badge.is-fallback {
+  border-color: #d97706;
+  color: #b45309;
 }
 
 .perf-monitor__link {
