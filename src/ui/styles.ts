@@ -255,12 +255,21 @@ const PERF_HUD_STYLES = `
   text-align: right;
 }
 
+.perf-monitor__footer {
+  padding-top: 8px;
+  border-top: 1px solid var(--perf-border);
+  color: var(--perf-muted);
+  font-size: 10px;
+  text-align: center;
+}
+
 .perf-monitor--full .perf-monitor__hud {
   display: none;
 }
 
 .perf-monitor--compact .perf-monitor__graphs,
-.perf-monitor--compact .perf-monitor__section {
+.perf-monitor--compact .perf-monitor__section,
+.perf-monitor--compact .perf-monitor__footer {
   display: none;
 }
 

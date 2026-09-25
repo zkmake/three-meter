@@ -1,3 +1,4 @@
+import { version } from "../../package.json";
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
 import type { Sample, TimingMetric } from "../core/types.ts";
 import { formatCount } from "./format.ts";
@@ -435,7 +436,11 @@ class PerformanceView {
       stats.append(rowEl);
     }
 
-    this.element.append(hud, options, graphs, stats);
+    const footer = document.createElement("div");
+    footer.className = "perf-monitor__footer";
+    footer.textContent = `three-meter v${version}`;
+
+    this.element.append(hud, options, graphs, stats, footer);
   }
 
   private rebuildHud() {
