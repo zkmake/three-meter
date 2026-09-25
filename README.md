@@ -131,7 +131,8 @@ On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a
 
 The full view's footer has two rows: the three-meter version (linked to its release notes) and the
 three revision, then the backend and the GPU name. An amber `WebGL2 fallback` badge means
-`WebGPURenderer` couldn't get WebGPU. The same data is on the monitor:
+`WebGPURenderer` couldn't get WebGPU. Its checkbox (off by default) shows the footer in the compact
+HUD too. The same data is on the monitor:
 
 ```ts
 monitor.getEnvironment();

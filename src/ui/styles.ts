@@ -257,12 +257,20 @@ const PERF_HUD_STYLES = `
 
 .perf-monitor__footer {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 6px;
   padding: 8px 6px 0;
   border-top: 1px solid var(--perf-border);
   color: var(--perf-muted);
   font-size: 10px;
+}
+
+.perf-monitor__footer-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .perf-monitor__footer-row {
@@ -322,8 +330,13 @@ const PERF_HUD_STYLES = `
 
 .perf-monitor--compact .perf-monitor__graphs,
 .perf-monitor--compact .perf-monitor__section,
-.perf-monitor--compact .perf-monitor__footer {
+.perf-monitor--compact:not(.perf-monitor--info) .perf-monitor__footer,
+.perf-monitor--compact .perf-monitor__footer > .perf-monitor__checkbox {
   display: none;
+}
+
+.perf-monitor--compact .perf-monitor__footer {
+  padding: 6px 2px 2px;
 }
 
 .perf-monitor--compact {

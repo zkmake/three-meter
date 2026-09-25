@@ -177,6 +177,7 @@ class PerformanceView {
   private readonly statValueEls = new Map<string, HTMLElement>();
   private readonly statCheckboxes = new Map<string, HTMLInputElement>();
   private dimCheckbox!: HTMLInputElement;
+  private infoCheckbox!: HTMLInputElement;
   private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
   private footerThreeEl!: HTMLElement;
   private footerHardwareEl!: HTMLElement;
@@ -206,6 +207,7 @@ class PerformanceView {
     this.applyModeClass();
     this.resizeObserver = new ResizeObserver(() => this.resizeCanvases());
     this.build();
+    this.applyInfoClass();
     this.rebuildHud();
     this.onThemeChanged();
     this.unsubscribe = this.settings.subscribe(() => this.onSelectionChanged());
@@ -268,6 +270,10 @@ class PerformanceView {
 
     if (this.mode === "compact") {
       this.renderHud(sample);
+
+      if (this.settings.info) {
+        this.renderFooter();
+      }
 
       return;
     }
@@ -482,8 +488,18 @@ class PerformanceView {
       stats.append(rowEl);
     }
 
+    // Checkbox first like the stat rows; the checkbox hides in compact, the rows don't.
     const footer = document.createElement("div");
     footer.className = "perf-monitor__footer";
+
+    this.infoCheckbox = this.buildCheckbox(
+      this.settings.info,
+      "Show version and environment in HUD",
+      (on) => this.settings.setInfo(on),
+    );
+
+    const footerBody = document.createElement("div");
+    footerBody.className = "perf-monitor__footer-body";
 
     // Software on the first row, hardware on the second.
     const softwareRow = document.createElement("div");
@@ -511,7 +527,8 @@ class PerformanceView {
     this.footerGpuEl.className = "perf-monitor__footer-gpu";
 
     this.footerHardwareEl.append(this.footerBackendEl, this.footerGpuEl);
-    footer.append(softwareRow, this.footerHardwareEl);
+    footerBody.append(softwareRow, this.footerHardwareEl);
+    footer.append(this.infoCheckbox, footerBody);
 
     this.element.append(hud, options, graphs, stats, footer);
   }
@@ -596,6 +613,8 @@ class PerformanceView {
     }
 
     this.dimCheckbox.checked = this.settings.dim;
+    this.infoCheckbox.checked = this.settings.info;
+    this.applyInfoClass();
     this.theme.setOverride(this.settings.theme);
     this.rebuildHud();
   }
@@ -619,6 +638,10 @@ class PerformanceView {
     checkbox.addEventListener("change", () => onChange(checkbox.checked));
 
     return checkbox;
+  }
+
+  private applyInfoClass() {
+    this.element.classList.toggle("perf-monitor--info", this.settings.info);
   }
 
   private applyModeClass() {

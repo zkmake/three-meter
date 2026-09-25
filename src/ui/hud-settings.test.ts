@@ -37,6 +37,15 @@ describe("HudSettings", () => {
     expect(reloaded.dim).toBe(true);
   });
 
+  test("info footer is off by default and persists", () => {
+    const settings = new HudSettings({ storageKey: "test:info" });
+    expect(settings.info).toBe(false);
+
+    settings.setInfo(true);
+    expect(new HudSettings({ storageKey: "test:info" }).info).toBe(true);
+    expect(new HudSettings({ storageKey: null, defaults: { info: true } }).info).toBe(true);
+  });
+
   test("notifies subscribers and stops after unsubscribe", () => {
     const settings = new HudSettings({ storageKey: null });
     const listener = vi.fn();
