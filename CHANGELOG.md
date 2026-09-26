@@ -1,5 +1,11 @@
 # @zkmake/three-meter
 
+## 0.8.0
+
+### Minor Changes
+
+- [#26](https://github.com/zkmake/three-meter/pull/26) [`1ef9918`](https://github.com/zkmake/three-meter/commit/1ef99186f16b72ca595623adf027f7c296945292) Thanks [@zkmake](https://github.com/zkmake)! - Top costs: where the draw calls and triangles come from. A new "top costs" section in the full view lists the five biggest costs in the main render pass, by mesh or by material, sortable by calls or triangles; copies of one mesh share a row (`tree ×300`) so unmerged duplicates stand out, and clicking a row logs its objects to the console. Estimated from the scene graph the way three walks it (visibility, layers, frustum culling, material groups, two-pass transparent double-sided materials), matching `renderer.info` exactly on a test scene. The monitor finds the scene itself from the render call that drew the most. Also `monitor.getSceneCost()`, and the copied report gains the top three meshes.
+
 ## 0.7.0
 
 ### Minor Changes
