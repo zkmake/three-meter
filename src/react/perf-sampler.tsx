@@ -16,7 +16,13 @@ type PerfSamplerProps = Omit<PerformanceMonitorOptions, "renderer"> & {
  * GPU queries then span the render that just ran. The monitor is created in
  * an effect so StrictMode's double mount attaches and detaches cleanly.
  */
-function PerfSampler({ gpuQueryPoolSize, historySize, store, trackGPU }: PerfSamplerProps) {
+function PerfSampler({
+  frameStatsSize,
+  gpuQueryPoolSize,
+  historySize,
+  store,
+  trackGPU,
+}: PerfSamplerProps) {
   const renderer = useThree((state) => state.gl);
   const monitorRef = useRef<PerformanceMonitor | null>(null);
   const startedRef = useRef(false);
@@ -24,6 +30,7 @@ function PerfSampler({ gpuQueryPoolSize, historySize, store, trackGPU }: PerfSam
 
   useEffect(() => {
     const monitor = new PerformanceMonitor({
+      frameStatsSize,
       gpuQueryPoolSize,
       historySize,
       renderer: renderer as unknown as PerfRenderer,
@@ -38,7 +45,7 @@ function PerfSampler({ gpuQueryPoolSize, historySize, store, trackGPU }: PerfSam
       monitorRef.current = null;
       monitor.dispose();
     };
-  }, [gpuQueryPoolSize, historySize, renderer, target, trackGPU]);
+  }, [frameStatsSize, gpuQueryPoolSize, historySize, renderer, target, trackGPU]);
 
   useFrame(() => {
     const monitor = monitorRef.current;

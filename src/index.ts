@@ -11,6 +11,7 @@ export { RingBuffer } from "./core/ring-buffer.ts";
 export { wrapAnimationLoop } from "./core/wrap-animation-loop.ts";
 export type {
   Environment,
+  FrameStats,
   GpuTiming,
   PerfRenderer,
   PerformanceMonitorOptions,

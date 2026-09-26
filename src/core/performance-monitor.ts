@@ -1,8 +1,10 @@
 import { readEnvironment } from "./environment.ts";
+import { computeFrameStats } from "./frame-stats.ts";
 import { GpuTimer } from "./gpu-timer.ts";
 import { RingBuffer } from "./ring-buffer.ts";
 import type {
   Environment,
+  FrameStats,
   PerfRenderer,
   PerformanceMonitorOptions,
   Sample,
@@ -13,6 +15,7 @@ const DEFAULT_GPU_POOL_SIZE = 5;
 /** One monitor per renderer: a second would stack the `render` patch and double-count passes. */
 const ATTACHED = new WeakSet<PerfRenderer>();
 const DEFAULT_HISTORY_SIZE = 120;
+const DEFAULT_FRAME_STATS_SIZE = 1000;
 const FPS_SMOOTHING = 0.1;
 /**
  * A frame interval past this is a stall (hidden tab, breakpoint, laptop lid),
@@ -50,6 +53,8 @@ class PerformanceMonitor {
   private readonly fpsHistory: RingBuffer;
   private readonly cpuHistory: RingBuffer;
   private readonly gpuHistory: RingBuffer;
+  private readonly frameIntervals: RingBuffer;
+  private frameStats: FrameStats | null = null;
   private cpuStart = 0;
   private lastBeginAt: number | null = null;
   private frameFps = 0;
@@ -63,6 +68,7 @@ class PerformanceMonitor {
       trackGPU = true,
       gpuQueryPoolSize = DEFAULT_GPU_POOL_SIZE,
       historySize = DEFAULT_HISTORY_SIZE,
+      frameStatsSize = DEFAULT_FRAME_STATS_SIZE,
     } = options;
 
     if (ATTACHED.has(renderer)) {
@@ -90,6 +96,7 @@ class PerformanceMonitor {
     this.fpsHistory = new RingBuffer(historySize);
     this.cpuHistory = new RingBuffer(historySize);
     this.gpuHistory = new RingBuffer(historySize);
+    this.frameIntervals = new RingBuffer(frameStatsSize);
     this.sample = this.buildEmptySample();
   }
 
@@ -102,6 +109,8 @@ class PerformanceMonitor {
       // A stall keeps the previous reading rather than logging a near-zero frame.
       if (frameMs > 0 && frameMs <= STALL_MS) {
         this.frameFps = 1000 / frameMs;
+        this.frameIntervals.push(frameMs);
+        this.frameStats = null;
       }
     }
 
@@ -168,6 +177,13 @@ class PerformanceMonitor {
     }
   }
 
+  /** 1% low, p99 frame time and hitches. Computed on read, cached until the next frame. */
+  getFrameStats(): FrameStats {
+    this.frameStats ??= computeFrameStats(this.frameIntervals.toArray());
+
+    return this.frameStats;
+  }
+
   /**
    * three revision, backend and GPU name. Cached once the backend is known;
    * before `WebGPURenderer.init()` settles it, `backend` is `null` and the
@@ -195,6 +211,8 @@ class PerformanceMonitor {
     this.fpsHistory.clear();
     this.cpuHistory.clear();
     this.gpuHistory.clear();
+    this.frameIntervals.clear();
+    this.frameStats = null;
   }
 
   private buildEmptySample(): Sample {

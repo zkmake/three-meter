@@ -41,6 +41,21 @@ type Sample = {
   resources: ResourceCounts;
 };
 
+/**
+ * Stutter over the last `frameStatsSize` frame intervals (default 1000, about
+ * 16 s at 60 Hz). Stalls over a second are left out.
+ */
+type FrameStats = {
+  /** Intervals in the window. */
+  frames: number;
+  /** Frames over twice the window's median interval. */
+  hitches: number;
+  /** 1% low: mean FPS across the slowest 1% of frames. */
+  lowFps: number;
+  /** 99th percentile frame interval in ms. */
+  p99Ms: number;
+};
+
 /** `webgl` is WebGL 1, which three dropped in r163. */
 type RenderBackend = "webgpu" | "webgl2" | "webgl";
 
@@ -92,10 +107,13 @@ type PerformanceMonitorOptions = {
   gpuQueryPoolSize?: number;
   /** Ring-buffer length backing the graphs. Default 120. */
   historySize?: number;
+  /** Frame intervals behind {@link FrameStats}. Default 1000. */
+  frameStatsSize?: number;
 };
 
 export type {
   Environment,
+  FrameStats,
   GpuTiming,
   PerfRenderer,
   PerformanceMonitorOptions,

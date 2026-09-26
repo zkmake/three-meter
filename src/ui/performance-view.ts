@@ -1,9 +1,11 @@
 import { version } from "../../package.json";
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
-import type { Environment, Sample, TimingMetric } from "../core/types.ts";
+import type { FrameStats, Sample, TimingMetric } from "../core/types.ts";
+import { copyText } from "./clipboard.ts";
 import { formatCount } from "./format.ts";
 import { HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
+import { backendLabel, formatReport } from "./report.ts";
 import { drawSparkline, type SparklineStyle } from "./sparkline.ts";
 import { applyTheme, HudTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
 
@@ -36,7 +38,7 @@ type TimingConfig = {
 type NumberConfig = {
   key: string;
   label: string;
-  read: (sample: Sample) => string;
+  read: (sample: Sample, stats: FrameStats) => string;
 };
 
 const TIMINGS: TimingConfig[] = [
@@ -80,17 +82,8 @@ const THEME_OPTIONS: { icon: "sun" | "monitor" | "moon"; label: string; mode: Th
 
 const RELEASE_URL = `https://github.com/zkmake/three-meter/releases/tag/v${version}`;
 
-const BACKEND_LABELS = { webgl: "WebGL", webgl2: "WebGL2", webgpu: "WebGPU" } as const;
-
-const backendLabel = (environment: Environment) => {
-  if (!environment.backend) {
-    return "";
-  }
-
-  const label = BACKEND_LABELS[environment.backend];
-
-  return environment.fallback ? `${label} fallback` : label;
-};
+/** How long the report button says `copied` / `failed` before reading `copy` again. */
+const COPY_FEEDBACK_MS = 1500;
 
 const readTiming = (sample: Sample, metric: TimingMetric) => {
   switch (metric) {
@@ -114,6 +107,21 @@ const NUMBERS: NumberConfig[] = [
     key: "gpu",
     label: "GPU",
     read: (sample) => (sample.gpu.available ? sample.gpu.ms.toFixed(1) : "—"),
+  },
+  {
+    key: "low",
+    label: "1% low",
+    read: (_sample, stats) => (stats.frames ? Math.round(stats.lowFps).toString() : "—"),
+  },
+  {
+    key: "p99",
+    label: "Frame p99",
+    read: (_sample, stats) => (stats.frames ? stats.p99Ms.toFixed(1) : "—"),
+  },
+  {
+    key: "hitches",
+    label: "Hitches",
+    read: (_sample, stats) => (stats.frames ? formatCount(stats.hitches) : "—"),
   },
   {
     key: "triangles",
@@ -295,8 +303,10 @@ class PerformanceView {
       );
     }
 
+    const stats = this.monitor.getFrameStats();
+
     for (const config of NUMBERS) {
-      this.statValueEls.get(config.key)!.textContent = config.read(sample);
+      this.statValueEls.get(config.key)!.textContent = config.read(sample, stats);
     }
 
     this.renderFooter();
@@ -328,11 +338,13 @@ class PerformanceView {
   }
 
   private renderHud(sample: Sample) {
+    const stats = this.hudNumberEls.size > 0 ? this.monitor.getFrameStats() : null;
+
     for (const [key, element] of this.hudNumberEls) {
       const config = NUMBERS.find((number) => number.key === key);
 
-      if (config) {
-        element.textContent = config.read(sample);
+      if (config && stats) {
+        element.textContent = config.read(sample, stats);
       }
     }
 
@@ -414,7 +426,7 @@ class PerformanceView {
     dimLabel.textContent = "dim on leave";
 
     dimRow.append(createIcon("blend", "perf-monitor__icon"), dimLabel, this.dimCheckbox);
-    options.append(themeRow, dimRow);
+    options.append(themeRow, dimRow, this.buildReportRow());
 
     const graphs = document.createElement("div");
     graphs.className = "perf-monitor__graphs";
@@ -626,6 +638,41 @@ class PerformanceView {
     for (const [mode, radio] of this.themeRadios) {
       radio.setAttribute("aria-checked", String(mode === this.theme.effective));
     }
+  }
+
+  private buildReportRow() {
+    const row = document.createElement("div");
+    row.className = "perf-monitor__row perf-monitor__row--static";
+
+    const label = document.createElement("span");
+    label.className = "perf-monitor__label";
+    label.textContent = "report";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "perf-monitor__button";
+    button.title = "Copy versions, GPU and current metrics as Markdown for a bug report";
+    button.textContent = "copy";
+
+    let resetTimer = 0;
+
+    const flash = (text: string) => {
+      button.textContent = text;
+      window.clearTimeout(resetTimer);
+      resetTimer = window.setTimeout(() => {
+        button.textContent = "copy";
+      }, COPY_FEEDBACK_MS);
+    };
+
+    button.addEventListener("click", () => {
+      void copyText(formatReport(this.monitor)).then((copied) =>
+        flash(copied ? "copied" : "failed"),
+      );
+    });
+
+    row.append(createIcon("clipboard", "perf-monitor__icon"), label, button);
+
+    return row;
   }
 
   private buildCheckbox(checked: boolean, title: string, onChange: (enabled: boolean) => void) {
