@@ -316,7 +316,6 @@ class PerformanceView {
   private readonly graphCheckboxes = new Map<TimingMetric, HTMLInputElement>();
   private readonly statValueEls = new Map<BudgetKey, HTMLElement>();
   private readonly statCheckboxes = new Map<BudgetKey, HTMLInputElement>();
-  private dimCheckbox!: HTMLInputElement;
   private infoCheckbox!: HTMLInputElement;
   private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
   private footerThreeEl!: HTMLElement;
@@ -671,21 +670,6 @@ class PerformanceView {
 
     themeRow.append(createIcon("contrast", "perf-monitor__icon"), themeLabel, segment);
 
-    const dimRow = document.createElement("label");
-    dimRow.className = "perf-monitor__row";
-
-    this.dimCheckbox = this.buildCheckbox(
-      this.settings.dim,
-      "Dim the performance panel when the pointer leaves",
-      (on) => this.settings.setDim(on),
-    );
-
-    const dimLabel = document.createElement("span");
-    dimLabel.className = "perf-monitor__label";
-    dimLabel.textContent = "dim on leave";
-
-    dimRow.append(createIcon("blend", "perf-monitor__icon"), dimLabel, this.dimCheckbox);
-
     // View-local, not a setting: it's a way to learn the panel, not a preference.
     const explainRow = document.createElement("label");
     explainRow.className = "perf-monitor__row";
@@ -699,7 +683,8 @@ class PerformanceView {
     explainLabel.textContent = "explain metrics";
 
     explainRow.append(createIcon("help", "perf-monitor__icon"), explainLabel, explainCheckbox);
-    options.append(themeRow, dimRow, explainRow, this.buildReportRow());
+    // Dim on leave is a disc on the floating HUD (`mountPerfHud`), beside drag and expand.
+    options.append(themeRow, explainRow, this.buildReportRow());
 
     const graphs = document.createElement("div");
     graphs.className = "perf-monitor__graphs";
@@ -862,11 +847,15 @@ class PerformanceView {
       label.textContent = config.label;
       label.title = METRIC_HELP[config.metric] ?? "";
 
+      const head = document.createElement("span");
+      head.className = "perf-monitor__graph-head";
+      head.append(createIcon(config.icon, "perf-monitor__icon"), label);
+
       const value = document.createElement("span");
       value.className = "perf-monitor__graph-value";
       value.textContent = "—";
 
-      overlay.append(label, value);
+      overlay.append(head, value);
       row.append(canvas, overlay);
       this.hudGraphsEl.append(row);
 
@@ -888,8 +877,8 @@ class PerformanceView {
 
       const label = document.createElement("span");
       label.className = "perf-monitor__hud-label";
-      label.textContent = config.label;
       label.title = METRIC_HELP[config.key] ?? "";
+      label.append(createIcon(config.icon, "perf-monitor__icon"), config.label);
 
       const value = document.createElement("span");
       value.className = "perf-monitor__hud-value";
@@ -913,7 +902,6 @@ class PerformanceView {
       checkbox.checked = this.settings.isNumberEnabled(key);
     }
 
-    this.dimCheckbox.checked = this.settings.dim;
     this.infoCheckbox.checked = this.settings.info;
     this.applyInfoClass();
     this.theme.setOverride(this.settings.theme);
