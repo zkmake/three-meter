@@ -1,5 +1,11 @@
 # @zkmake/three-meter
 
+## 0.7.0
+
+### Minor Changes
+
+- [#23](https://github.com/zkmake/three-meter/pull/23) [`959c0fb`](https://github.com/zkmake/three-meter/commit/959c0fb1f371eceda5a7f9ee4d20c6637ee32437) Thanks [@zkmake](https://github.com/zkmake)! - Budgets. A value past its budget turns amber in the full view and the compact HUD, with a tooltip naming the budget, and the FPS / CPU / GPU graphs draw it as a dashed line once the series reaches it. Timing budgets default from `targetFps` (60): FPS ≥ 95% of it, 1% low ≥ half, CPU and GPU within a frame, p99 within one and a half. Set your own with the `budgets` option on `mountPerfHud`, `PerfHud` and `PerformanceView` (e.g. `{ targetFps: 120, calls: 500 }`; `null` drops a default, `false` drops all), or later with `hud.setBudgets()`. New `--perf-warn` theme token.
+
 ## 0.6.0
 
 ### Minor Changes
