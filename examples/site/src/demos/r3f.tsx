@@ -12,7 +12,7 @@ import { StrictMode, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client";
 import { Color, type InstancedMesh, Matrix4 } from "three";
 
-import { type DemoFactory, gridPosition } from "../demo.ts";
+import { type DemoFactory, gridPosition, HUD_BUDGETS } from "../demo.ts";
 
 type SceneProps = {
   background: string;
@@ -106,7 +106,7 @@ function App({ background, count, storageKey, theme, webgpu }: SceneProps) {
         <Cubes count={count} />
         {perf && <PerfSampler />}
       </Canvas>
-      <PerfHud storageKey={storageKey} theme={theme} />
+      <PerfHud budgets={HUD_BUDGETS} storageKey={storageKey} theme={theme} />
     </>
   );
 }

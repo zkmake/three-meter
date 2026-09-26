@@ -1,11 +1,19 @@
 /**
  * Minimal canvas sparkline. The caller owns the canvas, its size, and any
  * device-pixel-ratio transform; this just paints a filled line series in
- * logical (CSS) pixel coordinates.
+ * logical (CSS) pixel coordinates. An optional guide (a budget) is drawn as a
+ * dashed line when it falls inside the series' range. The scale never
+ * stretches to fit it, so a CPU series at 0.2 ms keeps its shape under a
+ * 16.7 ms budget and the line appears once the series gets near.
  */
 type SparklineStyle = {
   fill: string;
   stroke: string;
+};
+
+type SparklineGuide = {
+  color: string;
+  value: number;
 };
 
 function drawSparkline(
@@ -14,6 +22,7 @@ function drawSparkline(
   height: number,
   values: readonly number[],
   style: SparklineStyle,
+  guide?: SparklineGuide,
 ) {
   ctx.clearRect(0, 0, width, height);
 
@@ -49,7 +58,20 @@ function drawSparkline(
   ctx.closePath();
   ctx.fillStyle = style.fill;
   ctx.fill();
+
+  if (guide && guide.value > 0 && guide.value <= range) {
+    // Half-pixel offset keeps a 1px line crisp.
+    const y = Math.round(toY(guide.value)) + 0.5;
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = guide.color;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 export { drawSparkline };
-export type { SparklineStyle };
+export type { SparklineGuide, SparklineStyle };

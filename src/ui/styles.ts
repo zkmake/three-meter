@@ -20,6 +20,7 @@ const PERF_HUD_STYLES = `
   --perf-row: rgba(255, 255, 255, 0.04);
   --perf-border: rgba(255, 255, 255, 0.12);
   --perf-accent: #60a5fa;
+  --perf-warn: #f59e0b;
   --perf-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
 
   color-scheme: dark;
@@ -34,6 +35,7 @@ const PERF_HUD_STYLES = `
   --perf-row: rgba(0, 0, 0, 0.05);
   --perf-border: rgba(0, 0, 0, 0.12);
   --perf-accent: #2563eb;
+  --perf-warn: #b45309;
   --perf-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
 
   color-scheme: light;
@@ -345,13 +347,15 @@ const PERF_HUD_STYLES = `
 }
 
 .perf-monitor__badge.is-fallback {
-  border-color: #f59e0b;
-  color: #f59e0b;
+  border-color: var(--perf-warn);
+  color: var(--perf-warn);
 }
 
-.perf-monitor[data-theme="light"] .perf-monitor__badge.is-fallback {
-  border-color: #d97706;
-  color: #b45309;
+/* Past its budget. The value's tooltip names the budget. */
+.perf-monitor__value.is-over,
+.perf-monitor__hud-value.is-over,
+.perf-monitor__graph-value.is-over {
+  color: var(--perf-warn);
 }
 
 .perf-monitor__link {

@@ -1,6 +1,14 @@
 import { version } from "../../package.json";
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
 import type { FrameStats, Sample, TimingMetric } from "../core/types.ts";
+import {
+  type BudgetKey,
+  type Budgets,
+  isFloor,
+  isOverBudget,
+  type ResolvedBudgets,
+  resolveBudgets,
+} from "./budgets.ts";
 import { copyText } from "./clipboard.ts";
 import { formatCount } from "./format.ts";
 import { HudSettings } from "./hud-settings.ts";
@@ -18,6 +26,11 @@ type PerformanceViewOptions = {
   mode?: PerformanceViewMode;
   /** Repaint rate. Default 10. */
   refreshHz?: number;
+  /**
+   * Limits past which a value turns amber. Timing budgets default from
+   * `targetFps` (60); `false` turns them all off. See {@link Budgets}.
+   */
+  budgets?: Budgets | false;
   /** Share one between views to keep them in sync; a fresh instance otherwise. */
   settings?: HudSettings;
   /**
@@ -38,10 +51,13 @@ type TimingConfig = {
 };
 
 type NumberConfig = {
+  format: (value: number) => string;
   icon: IconName;
-  key: string;
+  key: BudgetKey;
   label: string;
-  read: (sample: Sample, stats: FrameStats) => string;
+  unit?: "ms";
+  /** `null` until known: no frames yet, or no GPU timer. */
+  value: (sample: Sample, stats: FrameStats) => number | null;
 };
 
 const TIMINGS: TimingConfig[] = [
@@ -105,82 +121,139 @@ const readTiming = (sample: Sample, metric: TimingMetric) => {
 const isTimingAvailable = (sample: Sample, metric: TimingMetric) =>
   metric !== "gpu" || sample.gpu.available;
 
+const whole = (value: number) => Math.round(value).toString();
+const tenths = (value: number) => value.toFixed(1);
+
 const NUMBERS: NumberConfig[] = [
-  { icon: "gauge", key: "fps", label: "FPS", read: (sample) => Math.round(sample.fps).toString() },
+  { format: whole, icon: "gauge", key: "fps", label: "FPS", value: (sample) => sample.fps || null },
   {
+    format: formatCount,
     icon: "layers",
     key: "calls",
     label: "Calls",
-    read: (sample) => formatCount(sample.render.calls),
+    value: (sample) => sample.render.calls,
   },
-  { icon: "cpu", key: "cpu", label: "CPU", read: (sample) => sample.cpu.toFixed(1) },
   {
+    format: tenths,
+    icon: "cpu",
+    key: "cpu",
+    label: "CPU",
+    unit: "ms",
+    value: (sample) => sample.cpu,
+  },
+  {
+    format: tenths,
     icon: "zap",
     key: "gpu",
     label: "GPU",
-    read: (sample) => (sample.gpu.available ? sample.gpu.ms.toFixed(1) : "—"),
+    unit: "ms",
+    value: (sample) => (sample.gpu.available ? sample.gpu.ms : null),
   },
   {
+    format: whole,
     icon: "trendingDown",
     key: "low",
     label: "1% low",
-    read: (_sample, stats) => (stats.frames ? Math.round(stats.lowFps).toString() : "—"),
+    value: (_sample, stats) => (stats.frames ? stats.lowFps : null),
   },
   {
+    format: tenths,
     icon: "timer",
     key: "p99",
     label: "Frame p99",
-    read: (_sample, stats) => (stats.frames ? stats.p99Ms.toFixed(1) : "—"),
+    unit: "ms",
+    value: (_sample, stats) => (stats.frames ? stats.p99Ms : null),
   },
   {
+    format: formatCount,
     icon: "activity",
     key: "hitches",
     label: "Hitches",
-    read: (_sample, stats) => (stats.frames ? formatCount(stats.hitches) : "—"),
+    value: (_sample, stats) => (stats.frames ? stats.hitches : null),
   },
   {
+    format: formatCount,
     icon: "triangle",
     key: "triangles",
     label: "Triangles",
-    read: (sample) => formatCount(sample.render.triangles),
+    value: (sample) => sample.render.triangles,
   },
   {
+    format: formatCount,
     icon: "spline",
     key: "lines",
     label: "Lines",
-    read: (sample) => formatCount(sample.render.lines),
+    value: (sample) => sample.render.lines,
   },
   {
+    format: formatCount,
     icon: "circleDot",
     key: "points",
     label: "Points",
-    read: (sample) => formatCount(sample.render.points),
+    value: (sample) => sample.render.points,
   },
   {
+    format: formatCount,
     icon: "repeat",
     key: "passes",
     label: "Render passes",
-    read: (sample) => formatCount(sample.render.passes),
+    value: (sample) => sample.render.passes,
   },
   {
+    format: formatCount,
     icon: "box",
     key: "geometries",
     label: "Geometries",
-    read: (sample) => formatCount(sample.resources.geometries),
+    value: (sample) => sample.resources.geometries,
   },
   {
+    format: formatCount,
     icon: "image",
     key: "textures",
     label: "Textures",
-    read: (sample) => formatCount(sample.resources.textures),
+    value: (sample) => sample.resources.textures,
   },
   {
+    format: formatCount,
     icon: "palette",
     key: "shaders",
     label: "Shaders",
-    read: (sample) => formatCount(sample.resources.programs),
+    value: (sample) => sample.resources.programs,
   },
 ];
+
+const NUMBER_BY_KEY = new Map(NUMBERS.map((config) => [config.key, config]));
+
+/** Canvas can't read CSS custom properties; the budget line's amber per theme. */
+const GUIDE_COLOR: Record<ResolvedTheme, string> = {
+  dark: "rgba(245, 158, 11, 0.75)",
+  light: "rgba(180, 83, 9, 0.7)",
+};
+
+/** `Budget: at most 16.7 ms` / `at least 57`, or `""` without one. */
+const budgetTitle = (budgets: ResolvedBudgets, key: BudgetKey) => {
+  const limit = budgets.limits[key];
+  const config = NUMBER_BY_KEY.get(key);
+
+  if (limit === undefined || !config) {
+    return "";
+  }
+
+  const bound = isFloor(key) ? "at least" : "at most";
+
+  return `Budget: ${bound} ${config.format(limit)}${config.unit ? ` ${config.unit}` : ""}`;
+};
+
+/** The sample value a timing graph shows, `null` when not known. */
+const timingValue = (sample: Sample, metric: TimingMetric) => {
+  if (!isTimingAvailable(sample, metric)) {
+    return null;
+  }
+
+  const value = readTiming(sample, metric);
+
+  return metric === "fps" && value === 0 ? null : value;
+};
 
 type GraphCanvas = {
   canvas: HTMLCanvasElement;
@@ -212,8 +285,8 @@ class PerformanceView {
   private readonly graphValueEls = new Map<TimingMetric, HTMLElement>();
   private readonly graphCanvases = new Map<TimingMetric, GraphCanvas>();
   private readonly graphCheckboxes = new Map<TimingMetric, HTMLInputElement>();
-  private readonly statValueEls = new Map<string, HTMLElement>();
-  private readonly statCheckboxes = new Map<string, HTMLInputElement>();
+  private readonly statValueEls = new Map<BudgetKey, HTMLElement>();
+  private readonly statCheckboxes = new Map<BudgetKey, HTMLInputElement>();
   private dimCheckbox!: HTMLInputElement;
   private infoCheckbox!: HTMLInputElement;
   private readonly themeRadios = new Map<ThemeMode, HTMLButtonElement>();
@@ -225,7 +298,8 @@ class PerformanceView {
   private hudGraphsEl!: HTMLElement;
   private hudGridEl!: HTMLElement;
   private readonly hudGraphs = new Map<TimingMetric, HudGraph>();
-  private readonly hudNumberEls = new Map<string, HTMLElement>();
+  private readonly hudNumberEls = new Map<BudgetKey, HTMLElement>();
+  private budgets: ResolvedBudgets;
   private rafId: number | null = null;
   private lastPaintAt = 0;
   private readonly resizeObserver: ResizeObserver;
@@ -240,6 +314,7 @@ class PerformanceView {
     this.theme.setOverride(this.settings.theme);
     this.mode = options.mode ?? "full";
     this.minIntervalMs = 1000 / (options.refreshHz ?? 10);
+    this.budgets = resolveBudgets(options.budgets);
     this.element = document.createElement("div");
     this.element.className = "perf-monitor";
     this.applyModeClass();
@@ -277,6 +352,12 @@ class PerformanceView {
 
   getMode() {
     return this.mode;
+  }
+
+  /** Replace the budgets; `false` turns them all off. Applies on the next paint. */
+  setBudgets(budgets: Budgets | false | undefined) {
+    this.budgets = resolveBudgets(budgets);
+    this.applyBudgetTitles();
   }
 
   dispose() {
@@ -317,26 +398,19 @@ class PerformanceView {
     }
 
     for (const config of TIMINGS) {
-      const available = isTimingAvailable(sample, config.metric);
-      const valueEl = this.graphValueEls.get(config.metric)!;
-      valueEl.textContent = available
-        ? this.formatTiming(config, readTiming(sample, config.metric))
-        : "unavailable";
-
-      const graph = this.graphCanvases.get(config.metric)!;
-      drawSparkline(
-        graph.ctx,
-        graph.width,
-        graph.height,
-        available ? this.monitor.getHistory(config.metric) : [],
-        config.style[this.theme.resolved],
+      this.paintGraph(
+        config,
+        sample,
+        this.graphValueEls.get(config.metric)!,
+        this.graphCanvases.get(config.metric)!,
+        "unavailable",
       );
     }
 
     const stats = this.monitor.getFrameStats();
 
     for (const config of NUMBERS) {
-      this.statValueEls.get(config.key)!.textContent = config.read(sample, stats);
+      this.paintNumber(config, this.statValueEls.get(config.key)!, sample, stats);
     }
 
     this.renderFooter();
@@ -371,28 +445,73 @@ class PerformanceView {
     const stats = this.hudNumberEls.size > 0 ? this.monitor.getFrameStats() : null;
 
     for (const [key, element] of this.hudNumberEls) {
-      const config = NUMBERS.find((number) => number.key === key);
+      const config = NUMBER_BY_KEY.get(key);
 
       if (config && stats) {
-        element.textContent = config.read(sample, stats);
+        this.paintNumber(config, element, sample, stats);
       }
     }
 
     for (const [metric, graph] of this.hudGraphs) {
       const config = TIMINGS.find((timing) => timing.metric === metric)!;
-      const available = isTimingAvailable(sample, metric);
+      this.paintGraph(config, sample, graph.valueEl, graph, "—");
+    }
+  }
 
-      graph.valueEl.textContent = available
-        ? this.formatTiming(config, readTiming(sample, metric))
-        : "—";
+  private paintNumber(
+    config: NumberConfig,
+    element: HTMLElement,
+    sample: Sample,
+    stats: FrameStats,
+  ) {
+    const value = config.value(sample, stats);
+    element.textContent = value === null ? "—" : config.format(value);
+    element.classList.toggle("is-over", isOverBudget(this.budgets, config.key, value));
+  }
 
-      drawSparkline(
-        graph.ctx,
-        graph.width,
-        graph.height,
-        available ? this.monitor.getHistory(metric) : [],
-        config.style[this.theme.resolved],
-      );
+  /** Value and sparkline, with the budget line drawn once the series reaches it. */
+  private paintGraph(
+    config: TimingConfig,
+    sample: Sample,
+    valueEl: HTMLElement,
+    graph: GraphCanvas,
+    missing: string,
+  ) {
+    const value = timingValue(sample, config.metric);
+    const available = isTimingAvailable(sample, config.metric);
+    const limit = this.budgets.limits[config.metric];
+
+    valueEl.textContent = available
+      ? this.formatTiming(config, readTiming(sample, config.metric))
+      : missing;
+    valueEl.classList.toggle("is-over", isOverBudget(this.budgets, config.metric, value));
+
+    drawSparkline(
+      graph.ctx,
+      graph.width,
+      graph.height,
+      available ? this.monitor.getHistory(config.metric) : [],
+      config.style[this.theme.resolved],
+      limit === undefined ? undefined : { color: GUIDE_COLOR[this.theme.resolved], value: limit },
+    );
+  }
+
+  /** Each value's tooltip names its budget, so amber explains itself. */
+  private applyBudgetTitles() {
+    for (const [key, element] of this.statValueEls) {
+      element.title = budgetTitle(this.budgets, key);
+    }
+
+    for (const [key, element] of this.hudNumberEls) {
+      element.title = budgetTitle(this.budgets, key);
+    }
+
+    for (const [metric, element] of this.graphValueEls) {
+      element.title = budgetTitle(this.budgets, metric);
+    }
+
+    for (const [metric, graph] of this.hudGraphs) {
+      graph.valueEl.title = budgetTitle(this.budgets, metric);
     }
   }
 
@@ -671,6 +790,7 @@ class PerformanceView {
       this.hudNumberEls.set(config.key, value);
     }
 
+    this.applyBudgetTitles();
     this.resizeCanvases();
   }
 

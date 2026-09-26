@@ -5,6 +5,7 @@
  * compose their own panel.
  */
 
+export { resolveBudgets } from "./budgets.ts";
 export { dockPanel } from "./dock-panel.ts";
 export { DEFAULT_STORAGE_KEY, HudSettings } from "./hud-settings.ts";
 export { mountPerfHud } from "./mount-perf-hud.ts";
@@ -12,6 +13,7 @@ export { PerformanceView } from "./performance-view.ts";
 export { formatReport } from "./report.ts";
 export { injectStyles, PERF_HUD_STYLES } from "./styles.ts";
 export { HudTheme, isThemeMode, THEME_MODES } from "./theme.ts";
+export type { BudgetKey, Budgets, ResolvedBudgets } from "./budgets.ts";
 export type {
   DefaultPlacement,
   DockAlign,

@@ -3,7 +3,7 @@
  * Each factory mounts into `host`, owns its renderer and HUD, and tears
  * everything down in `dispose`.
  */
-import type { ThemeMode } from "@zkmake/three-meter/ui";
+import type { Budgets, ThemeMode } from "@zkmake/three-meter/ui";
 
 type DemoKind = "vanilla" | "r3f";
 
@@ -30,6 +30,12 @@ type DemoFactory = (host: HTMLElement, options: DemoOptions) => Promise<Demo>;
 
 const DEMO_KINDS: readonly DemoKind[] = ["vanilla", "r3f"];
 
+/**
+ * A count budget on top of the timing defaults, so the demo shows one going
+ * amber: 12 triangles a cube passes 250K a little past `?count=20000`.
+ */
+const HUD_BUDGETS: Budgets = { triangles: 250_000 };
+
 const isDemoKind = (value: unknown): value is DemoKind =>
   typeof value === "string" && (DEMO_KINDS as readonly string[]).includes(value);
 
@@ -43,5 +49,5 @@ const gridPosition = (index: number, count: number): [number, number, number] =>
   return [x * 0.7, y * 0.7, z * 0.7];
 };
 
-export { DEMO_KINDS, gridPosition, isDemoKind };
+export { DEMO_KINDS, gridPosition, HUD_BUDGETS, isDemoKind };
 export type { Demo, DemoFactory, DemoKind, DemoOptions };
