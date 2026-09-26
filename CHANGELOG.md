@@ -1,5 +1,11 @@
 # @zkmake/three-meter
 
+## 0.9.0
+
+### Minor Changes
+
+- [#28](https://github.com/zkmake/three-meter/pull/28) [`b13d012`](https://github.com/zkmake/three-meter/commit/b13d01249336c8aa50b913c7ff46404edb302070) Thanks [@zkmake](https://github.com/zkmake)! - The compact HUD's labels and graphs get the metric icons the full view has. Dim on leave moves out of the full view's options into a third disc on the floating HUD, under drag and expand; it lights up in the accent colour while on. `settings.dim` and its persistence are unchanged.
+
 ## 0.8.0
 
 ### Minor Changes
