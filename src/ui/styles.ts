@@ -87,8 +87,9 @@ const PERF_HUD_STYLES = `
   cursor: pointer;
 }
 
-.perf-monitor__graph-overlay .perf-monitor__graph-head {
+.perf-monitor__graph-overlay--toggle {
   pointer-events: auto;
+  cursor: pointer;
 }
 
 .perf-monitor__graph-label {
@@ -118,6 +119,25 @@ const PERF_HUD_STYLES = `
   padding: 2px 6px;
   border-radius: 3px;
   cursor: pointer;
+}
+
+/* Hidden until "explain metrics" is on; then the row wraps it under the label. */
+.perf-monitor__hint {
+  display: none;
+  flex-basis: 100%;
+  padding: 0 0 2px 18px;
+  color: var(--perf-muted);
+  font-size: 10px;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.perf-monitor--explain .perf-monitor__hint {
+  display: block;
+}
+
+.perf-monitor--explain .perf-monitor__section .perf-monitor__row {
+  flex-wrap: wrap;
 }
 
 .perf-monitor__row:nth-child(even) {
@@ -352,7 +372,8 @@ const PERF_HUD_STYLES = `
 .perf-monitor--compact .perf-monitor__graphs,
 .perf-monitor--compact .perf-monitor__section,
 .perf-monitor--compact:not(.perf-monitor--info) .perf-monitor__footer,
-.perf-monitor--compact .perf-monitor__footer > .perf-monitor__checkbox {
+.perf-monitor--compact .perf-monitor__footer > .perf-monitor__checkbox,
+.perf-monitor--compact .perf-monitor__footer > .perf-monitor__icon {
   display: none;
 }
 
@@ -381,6 +402,11 @@ const PERF_HUD_STYLES = `
 .perf-hud--full > .perf-monitor {
   width: 16rem;
   max-width: 100%;
+}
+
+/* Room for the hints, so most fit on two or three lines. Plus padding, this fills the host's 20rem cap. */
+.perf-hud--full > .perf-monitor--explain {
+  width: 19rem;
 }
 
 .perf-hud > .perf-monitor {
