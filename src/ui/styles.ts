@@ -600,17 +600,19 @@ const PERF_HUD_STYLES = `
   cursor: grabbing;
 }
 
+/* The ring is only ever hover or keyboard focus, never state. */
 .perf-hud__disc:hover,
-.perf-hud__disc:focus-visible,
-.perf-hud__disc[aria-pressed="true"] {
+.perf-hud__disc:focus-visible {
   color: var(--perf-fg);
   outline: 1px solid color-mix(in srgb, var(--perf-accent) 60%, transparent);
   outline-offset: 1px;
 }
 
-/* Dim on: the mark takes the accent, so on and off differ even under the hover ring. */
+/* Dim on is a solid accent disc, off a plain one, so the state reads without hovering and
+   hover keeps its own look on top of either. After the hover rule, so on stays on under it. */
 .perf-hud__dim[aria-pressed="true"] {
-  color: var(--perf-accent);
+  background: var(--perf-accent);
+  color: var(--perf-bg);
 }
 `;
 

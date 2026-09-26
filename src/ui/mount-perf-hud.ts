@@ -128,6 +128,7 @@ const mountPerfHud = (
   const applyDim = () => {
     host.classList.toggle("perf-hud--dim", settings.dim);
     dim.setAttribute("aria-pressed", String(settings.dim));
+    dim.title = `Dim on leave: ${settings.dim ? "on" : "off"}`;
   };
 
   applyMode();
