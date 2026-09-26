@@ -2,10 +2,21 @@
  * The Lucide marks the HUD chrome uses, inlined so the package carries no
  * icon dependency. The markup is static, so nothing user-supplied reaches it.
  */
-type IconName = "blend" | "contrast" | "grip" | "monitor" | "moon" | "sliders" | "sun";
+type IconName =
+  | "blend"
+  | "clipboard"
+  | "contrast"
+  | "grip"
+  | "monitor"
+  | "moon"
+  | "sliders"
+  | "sun";
 
 const ICON_MARKUP: Record<IconName, string> = {
   blend: '<circle cx="9" cy="9" r="7"/><circle cx="15" cy="15" r="7"/>',
+  clipboard:
+    '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>' +
+    '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   contrast: '<circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/>',
   grip:
     '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/>' +

@@ -168,4 +168,26 @@ describe("PerformanceMonitor", () => {
     expect(monitor.getHistory("cpu")).toHaveLength(3);
     monitor.dispose();
   });
+
+  test("frame stats window skips stalls, stays bounded, and caches until the next frame", () => {
+    const monitor = new PerformanceMonitor({
+      frameStatsSize: 3,
+      renderer: fakeWebgl(),
+      trackGPU: false,
+    });
+
+    // begin() reads the clock once, end() once. Intervals: 10, 20, stall, 30, 40.
+    scriptClock([0, 0, 10, 10, 30, 30, 5030, 5030, 5060, 5060, 5100, 5100]);
+
+    for (let index = 0; index < 6; index += 1) {
+      monitor.begin();
+      monitor.end();
+    }
+
+    const stats = monitor.getFrameStats();
+    expect(stats.frames).toBe(3);
+    expect(stats.p99Ms).toBe(40);
+    expect(monitor.getFrameStats()).toBe(stats);
+    monitor.dispose();
+  });
 });

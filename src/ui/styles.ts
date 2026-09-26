@@ -189,6 +189,27 @@ const PERF_HUD_STYLES = `
   color: inherit;
 }
 
+.perf-monitor__button {
+  flex: none;
+  min-width: 7ch;
+  padding: 0 6px;
+  border: 1px solid var(--perf-border);
+  border-radius: 3px;
+  background: var(--perf-row);
+  color: var(--perf-fg-dim);
+  font: inherit;
+  cursor: pointer;
+}
+
+.perf-monitor__button:hover {
+  color: var(--perf-fg);
+}
+
+.perf-monitor__button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--perf-accent) 60%, transparent);
+  outline-offset: 1px;
+}
+
 .perf-monitor__checkbox {
   flex: none;
   margin: 0;

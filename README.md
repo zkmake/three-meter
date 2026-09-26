@@ -90,8 +90,8 @@ Canvas is its own React root. To run two canvases on one page, pass the same `st
 | `injectStyles`     | `true`             | Append the stylesheet once per document.                                                      |
 | `refreshHz`        | `10`               | Repaint rate.                                                                                 |
 
-`PerformanceMonitor` and `PerfSampler` take `trackGPU` (default true), `gpuQueryPoolSize` (default 5)
-and `historySize` (default 120).
+`PerformanceMonitor` and `PerfSampler` take `trackGPU` (default true), `gpuQueryPoolSize` (default 5),
+`historySize` (default 120) and `frameStatsSize` (default 1000).
 
 ## Theme
 
@@ -142,6 +142,39 @@ monitor.getEnvironment();
 `backend` is `null` until `WebGPURenderer.init()` settles. `gpu` comes from WebGPU's adapter info or
 WebGL's unmasked renderer string, and is `null` where the browser hides it. Chrome's WebGPU gives
 vendor and architecture, not the model.
+
+## Stutter
+
+Average FPS hides a hitch every few seconds. Three rows in the full view catch it, and any of them
+can be ticked into the compact HUD:
+
+- **1% low**: mean FPS across the slowest 1% of frames.
+- **Frame p99**: 99% of frames finish within this many ms.
+- **Hitches**: frames over twice the median frame time.
+
+They cover the last `frameStatsSize` frames (1000 by default, about 16 s at 60 Hz). Gaps over a
+second, like a hidden tab, are left out. Read them with `monitor.getFrameStats()`:
+
+```ts
+monitor.getFrameStats();
+// { frames: 1000, lowFps: 97.6, p99Ms: 10.2, hitches: 3 }
+```
+
+## Bug reports
+
+The **report** row's copy button puts a Markdown snapshot on the clipboard: versions, backend, GPU,
+the current metrics, the stutter stats, the viewport and the user agent. Paste it into an issue.
+`formatReport(monitor)` from `@zkmake/three-meter/ui` returns the same text.
+
+```text
+three-meter v0.5.0 · three r186 · WebGL2 · Apple M4 Max
+FPS 120 · 1% low 98 · p99 10.2 ms · hitches 3 / 1,000 frames
+CPU 0.2 ms · GPU 0.7 ms
+Calls 1 · passes 1 · triangles 24,000 · lines 0 · points 0
+Geometries 1 · textures 1 · shaders 1
+Viewport 1280×720 @2x
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) …
+```
 
 ## Examples
 
