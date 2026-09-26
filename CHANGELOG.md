@@ -1,5 +1,11 @@
 # @zkmake/three-meter
 
+## 0.6.0
+
+### Minor Changes
+
+- [#21](https://github.com/zkmake/three-meter/pull/21) [`4123782`](https://github.com/zkmake/three-meter/commit/41237824a063c0286f21347b88198f88ce2d9929) Thanks [@zkmake](https://github.com/zkmake)! - Friendlier full view. Each metric row gets an icon on the left and its checkbox moves to the right, after the value, matching the option rows. Every metric has a plain-language explanation: hover a label for it, or tick the new "explain metrics" option to show them under each row.
+
 ## 0.5.0
 
 ### Minor Changes
