@@ -232,6 +232,96 @@ const PERF_HUD_STYLES = `
   outline-offset: 1px;
 }
 
+/* Top costs: name, calls, triangles. Rows are buttons that log their objects. */
+.perf-monitor__costs-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 2px;
+}
+
+.perf-monitor__costs-body[hidden] {
+  display: none;
+}
+
+.perf-monitor__cost {
+  /* Rows are buttons, which shrink to their content without a width. */
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5ch 6ch;
+  gap: 6px;
+  align-items: baseline;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.perf-monitor__cost:not(.perf-monitor__cost--head):hover {
+  background: var(--perf-row);
+}
+
+.perf-monitor__cost:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--perf-accent) 60%, transparent);
+  outline-offset: -1px;
+}
+
+.perf-monitor__cost--head {
+  align-items: center;
+  cursor: default;
+}
+
+.perf-monitor__cost-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--perf-fg-dim);
+}
+
+.perf-monitor__cost-copies {
+  color: var(--perf-muted);
+}
+
+.perf-monitor__cost-value {
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+}
+
+.perf-monitor__cost-sort {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--perf-muted);
+  font: inherit;
+  font-size: 10px;
+  text-align: right;
+  cursor: pointer;
+}
+
+.perf-monitor__cost-sort[aria-pressed="true"] {
+  color: var(--perf-fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.perf-monitor__segment-option--text {
+  width: auto;
+  padding: 0 5px;
+  font: inherit;
+  font-size: 10px;
+}
+
+.perf-monitor__costs-note {
+  padding: 2px 6px;
+  color: var(--perf-muted);
+  font-size: 10px;
+}
+
 .perf-monitor__checkbox {
   flex: none;
   margin: 0;

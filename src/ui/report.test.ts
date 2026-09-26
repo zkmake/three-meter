@@ -34,6 +34,37 @@ describe("renderReport", () => {
     ]);
   });
 
+  test("lists the top three meshes when the scene cost is known", () => {
+    const entry = (label: string, calls: number, triangles: number, instances = 1) => ({
+      calls,
+      instances,
+      label,
+      objects: [],
+      triangles,
+    });
+    const report = renderReport({
+      cost: {
+        calls: 503,
+        materials: [],
+        meshes: [
+          entry("tree", 500, 6000, 500),
+          entry("cubes", 1, 24_000, 2000),
+          entry("ground", 1, 2),
+          entry("sky", 1, 80),
+        ],
+        triangles: 30_082,
+      },
+      environment: { backend: "webgl2", fallback: false, gpu: null, three: "186" },
+      page: null,
+      sample,
+      stats: { frames: 0, hitches: 0, lowFps: 0, p99Ms: 0 },
+    });
+
+    expect(report).toContain(
+      "Top: tree ×500 (500 calls, 6,000 tris) · cubes ×2,000 (1 call, 24,000 tris) · ground (1 call, 2 tris)\n```",
+    );
+  });
+
   test("leaves out what isn't known yet", () => {
     const report = renderReport({
       environment: { backend: null, fallback: false, gpu: null, three: null },
