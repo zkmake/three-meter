@@ -1,5 +1,11 @@
 # @zkmake/three-meter
 
+## 0.5.0
+
+### Minor Changes
+
+- [#19](https://github.com/zkmake/three-meter/pull/19) [`f7e84d2`](https://github.com/zkmake/three-meter/commit/f7e84d283d187c768b17b0c25e308493f3c86582) Thanks [@zkmake](https://github.com/zkmake)! - Stutter stats and a copyable bug report. The full view gains 1% low, frame p99 and hitch rows over the last `frameStatsSize` frames (default 1000), available to the compact HUD like any other row and through `PerformanceMonitor.getFrameStats()`. A new report row copies a Markdown snapshot (versions, backend, GPU, metrics, stutter stats, viewport, user agent) to the clipboard; `formatReport(monitor)` returns the same text.
+
 ## 0.4.0
 
 ### Minor Changes
