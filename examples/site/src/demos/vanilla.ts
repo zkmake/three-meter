@@ -20,7 +20,7 @@ import {
   WebGLRenderer,
 } from "three";
 
-import { type DemoFactory, gridPosition } from "../demo.ts";
+import { type DemoFactory, gridPosition, HUD_BUDGETS } from "../demo.ts";
 
 type Loop = (time: number) => void;
 
@@ -78,7 +78,11 @@ const createVanillaDemo: DemoFactory = async (host, options) => {
   scene.add(cubes);
 
   const monitor = new PerformanceMonitor({ renderer });
-  const hud = mountPerfHud(monitor, { storageKey: options.storageKey, theme: options.theme });
+  const hud = mountPerfHud(monitor, {
+    budgets: HUD_BUDGETS,
+    storageKey: options.storageKey,
+    theme: options.theme,
+  });
 
   renderer.setAnimationLoop(
     wrapAnimationLoop(monitor, (time) => {

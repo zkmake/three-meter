@@ -6,6 +6,7 @@
  * `PerfHud` wraps; a vanilla three app calls it directly.
  */
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
+import type { Budgets } from "./budgets.ts";
 import { type DefaultPlacement, dockPanel } from "./dock-panel.ts";
 import { DEFAULT_STORAGE_KEY, HudSettings } from "./hud-settings.ts";
 import { createIcon } from "./icons.ts";
@@ -36,6 +37,12 @@ type MountPerfHudOptions = {
   injectStyles?: boolean;
   /** Repaint rate. Default 10. */
   refreshHz?: number;
+  /**
+   * Limits past which a value turns amber, e.g. `{ calls: 500, targetFps: 120 }`.
+   * Timing budgets default from `targetFps` (60); `false` turns them all off.
+   * Change later with the handle's `setBudgets`.
+   */
+  budgets?: Budgets | false;
   /** Accessible name of the panel. Default `Performance`. */
   label?: string;
 };
@@ -56,6 +63,8 @@ type PerfHudHandle = {
   getTheme: () => ThemeMode;
   /** Sets the consumer layer; a pick made in the panel still wins until `settings.setTheme(null)`. */
   setTheme: (mode: ThemeMode) => void;
+  /** Replace the budgets; `false` turns them all off. */
+  setBudgets: (budgets: Budgets | false | undefined) => void;
   dispose: () => void;
 };
 
@@ -98,6 +107,7 @@ const mountPerfHud = (
   tools.append(grip, toggle);
 
   const view = new PerformanceView({
+    budgets: options.budgets,
     mode: options.mode ?? "compact",
     monitor,
     refreshHz: options.refreshHz,
@@ -201,6 +211,7 @@ const mountPerfHud = (
     },
     element: host,
     getMode: () => view.getMode(),
+    setBudgets: (budgets) => view.setBudgets(budgets),
     setMode,
     getTheme: () => theme.mode,
     setTheme: (mode: ThemeMode) => theme.setMode(mode),

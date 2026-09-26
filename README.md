@@ -89,6 +89,7 @@ Canvas is its own React root. To run two canvases on one page, pass the same `st
 | `parent`           | `document.body`    | Where the host element is appended.                                                           |
 | `injectStyles`     | `true`             | Append the stylesheet once per document.                                                      |
 | `refreshHz`        | `10`               | Repaint rate.                                                                                 |
+| `budgets`          | timing defaults    | Limits past which a value turns amber. See [Budgets](#budgets).                               |
 
 `PerformanceMonitor` and `PerfSampler` take `trackGPU` (default true), `gpuQueryPoolSize` (default 5),
 `historySize` (default 120) and `frameStatsSize` (default 1000).
@@ -118,7 +119,7 @@ hud.theme.subscribe(() => syncMyPageWith(hud.theme.resolved));
 
 The resolved theme lands on `data-theme` of `.perf-hud` and `.perf-monitor`. To restyle either
 palette, override the `--perf-*` custom properties (`bg`, `fg`, `fg-dim`, `muted`, `row`,
-`border`, `accent`, `shadow`) on those selectors.
+`border`, `accent`, `warn`, `shadow`) on those selectors. `warn` is the over-budget amber.
 
 ## GPU timing
 
@@ -148,6 +149,23 @@ vendor and architecture, not the model.
 Every row has an icon, its value, and a checkbox on the right that puts it in the compact HUD. Hover
 a label for a one-line explanation of the metric and what a bad reading means, or tick **explain
 metrics** to show them all under the rows (also works on touch).
+
+## Budgets
+
+A value past its budget turns amber in the full view and the compact HUD, and its tooltip names the
+budget. The FPS, CPU and GPU graphs draw the budget as a dashed line once the series reaches it; the
+scale never stretches to fit it, so a quiet graph keeps its detail.
+
+Timing budgets come from `targetFps` (60 by default): FPS at least 95% of it, 1% low at least half,
+CPU and GPU within one frame (16.7 ms), frame p99 within one and a half. Counts have no default,
+since what's reasonable depends on the scene. Set your own:
+
+```ts
+mountPerfHud(monitor, { budgets: { targetFps: 120, calls: 500, triangles: 2_000_000 } });
+hud.setBudgets({ gpu: null }); // null drops a default; false drops them all
+```
+
+`PerfHud` takes the same `budgets` prop and applies changes live.
 
 ## Stutter
 

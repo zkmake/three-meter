@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import type { Budgets } from "../ui/budgets.ts";
 import {
   mountPerfHud,
   type MountPerfHudOptions,
@@ -17,12 +18,14 @@ type PerfHudProps = Omit<MountPerfHudOptions, "settings"> & {
  * as three objects. Mounts the dockable HUD whenever a `PerfSampler` has
  * published a monitor and tears it down when that sampler unmounts.
  *
- * `theme`, `mode` and `label` apply live through the handle. `defaultPlacement`
- * is compared by value, so an inline `{{ edge: "right" }}` literal is fine.
+ * `theme`, `mode`, `label` and `budgets` apply live through the handle.
+ * `defaultPlacement` and `budgets` are compared by value, so inline literals
+ * like `{{ edge: "right" }}` are fine.
  * The remaining props (`storageKey`, `parent`, `refreshHz`, `injectStyles`,
  * `store`) remount the HUD when they change.
  */
 function PerfHud({
+  budgets,
   defaultPlacement,
   injectStyles,
   label,
@@ -40,6 +43,9 @@ function PerfHud({
   const themeRef = useRef(theme);
   const modeRef = useRef(mode);
   const labelRef = useRef(label);
+  const budgetsRef = useRef(budgets);
+  // By value: an inline `{{ calls: 500 }}` is a new object every render.
+  const budgetsKey = JSON.stringify(budgets ?? null);
   // Primitives, so an inline `{{ edge: "right" }}` literal doesn't remount each render.
   const placementEdge = defaultPlacement?.edge;
   const placementAlign = defaultPlacement?.align;
@@ -54,6 +60,7 @@ function PerfHud({
       }
 
       handleRef.current = mountPerfHud(monitor, {
+        budgets: budgetsRef.current,
         defaultPlacement: placementEdge
           ? { align: placementAlign, edge: placementEdge }
           : undefined,
@@ -86,6 +93,13 @@ function PerfHud({
     modeRef.current = mode;
     handleRef.current?.setMode(mode ?? "compact");
   }, [mode]);
+
+  useEffect(() => {
+    // Read back from the key so the effect depends on the value, not the object.
+    const next = (JSON.parse(budgetsKey) as Budgets | false | null) ?? undefined;
+    budgetsRef.current = next;
+    handleRef.current?.setBudgets(next);
+  }, [budgetsKey]);
 
   useEffect(() => {
     labelRef.current = label;
