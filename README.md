@@ -1,29 +1,36 @@
 # @zkmake/three-meter
 
-Frame metrics for a three.js renderer: FPS, CPU ms, GPU ms, draw calls, render passes, triangles,
-geometries, textures and programs, with a small dockable HUD. Zero dependencies. Works with
-`WebGLRenderer` and `WebGPURenderer`, with or without React.
+Frame metrics for a three.js renderer, with a small dockable HUD: FPS, CPU and GPU time, stutter
+(1% low, p99 frame time, hitches), draw calls, render passes, triangles, and the geometries,
+textures and shaders in GPU memory. Zero dependencies. Works with `WebGLRenderer` and
+`WebGPURenderer`, with or without React.
 
 ```sh
 bun add -d @zkmake/three-meter   # or npm i -D / pnpm add -D
 ```
 
 Live demo: [three-meter.pages.dev](https://three-meter.pages.dev/), with a vanilla three and a
-React Three Fiber take on the same scene. Add `?webgpu` for the WebGPU renderer and `?count=5000` to
-load the scene up.
+React Three Fiber take on the same scene. Add `?webgpu` for the WebGPU renderer and `?count=30000` to
+load the scene up past the demo's triangle budget.
 
 <p align="center">
   <img
     src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png"
     width="320"
-    alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), dim on leave, explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders); and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Two discs beside it: a drag grip and the compact/full toggle."
+    alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), dim on leave, explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values, the FPS graph showing a dashed budget line; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders), with the triangle count in amber for being over its budget; and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Two discs beside it: a drag grip and the compact/full toggle."
   />
 </p>
 
-The sampler and the card are separate components, so toggling the HUD never remounts your canvas.
-GPU time is measured on WebGPU as well as WebGL. The counters are draw calls, render passes and
-resource counts, which is what you watch when a scene is instanced. The card docks to a screen edge,
-remembers where you put it, and hides its controls until the pointer comes near.
+- **Spot problems at a glance.** Values past their budget turn amber, and every metric explains
+  itself on hover, so you don't need to know what a p99 is to see that one is bad.
+- **See stutter, not just averages.** 1% low, p99 frame time and hitch counts catch the frame that
+  drops every few seconds while the FPS average still reads 60.
+- **Real GPU time** from timer queries on WebGPU, and on WebGL in Chrome and Edge, not an estimate
+  from frame intervals.
+- **One-click bug reports.** Copy versions, backend, GPU and the current numbers as Markdown.
+- **Stays out of the way.** The sampler and the card are separate components, so toggling the HUD
+  never remounts your canvas. The card docks to a screen edge, remembers where you put it, and hides
+  its controls until the pointer comes near.
 
 ## Entry points
 
@@ -90,9 +97,89 @@ Canvas is its own React root. To run two canvases on one page, pass the same `st
 | `injectStyles`     | `true`             | Append the stylesheet once per document.                                                      |
 | `refreshHz`        | `10`               | Repaint rate.                                                                                 |
 | `budgets`          | timing defaults    | Limits past which a value turns amber. See [Budgets](#budgets).                               |
+| `label`            | `"Performance"`    | Accessible name of the panel.                                                                 |
 
 `PerformanceMonitor` and `PerfSampler` take `trackGPU` (default true), `gpuQueryPoolSize` (default 5),
 `historySize` (default 120) and `frameStatsSize` (default 1000).
+
+## Reading the panel
+
+Every row has an icon, its value, and a checkbox on the right that puts it in the compact HUD. Hover
+a label for a one-line explanation of the metric and what a bad reading means, or tick **explain
+metrics** to show them all under the rows (also works on touch).
+
+## Stutter
+
+Average FPS hides a hitch every few seconds. Three rows in the full view catch it, and any of them
+can be ticked into the compact HUD:
+
+- **1% low**: mean FPS across the slowest 1% of frames.
+- **Frame p99**: 99% of frames finish within this many ms.
+- **Hitches**: frames over twice the median frame time.
+
+They cover the last `frameStatsSize` frames (1000 by default, about 16 s at 60 Hz). Gaps over a
+second, like a hidden tab, are left out. Read them with `monitor.getFrameStats()`:
+
+```ts
+monitor.getFrameStats();
+// { frames: 1000, lowFps: 97.6, p99Ms: 10.2, hitches: 3 }
+```
+
+## Budgets
+
+A value past its budget turns amber in the full view and the compact HUD, and its tooltip names the
+budget. The FPS, CPU and GPU graphs draw the budget as a dashed line once the series reaches it; the
+scale never stretches to fit it, so a quiet graph keeps its detail.
+
+Timing budgets come from `targetFps` (60 by default): FPS at least 95% of it, 1% low at least half,
+CPU and GPU within one frame (16.7 ms), frame p99 within one and a half. Counts have no default,
+since what's reasonable depends on the scene. Set your own:
+
+```ts
+mountPerfHud(monitor, { budgets: { targetFps: 120, calls: 500, triangles: 2_000_000 } });
+hud.setBudgets({ gpu: null }); // null drops a default; false drops them all
+```
+
+`PerfHud` takes the same `budgets` prop and applies changes live.
+
+## Bug reports
+
+The **report** row's copy button puts a Markdown snapshot on the clipboard: versions, backend, GPU,
+the current metrics, the stutter stats, the viewport and the user agent. Paste it into an issue.
+`formatReport(monitor)` from `@zkmake/three-meter/ui` returns the same text.
+
+```text
+three-meter v0.7.0 · three r186 · WebGL2 · Apple M4 Max
+FPS 120 · 1% low 98 · p99 10.2 ms · hitches 3 / 1,000 frames
+CPU 0.2 ms · GPU 0.7 ms
+Calls 1 · passes 1 · triangles 24,000 · lines 0 · points 0
+Geometries 1 · textures 1 · shaders 1
+Viewport 1280×720 @2x
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) …
+```
+
+## Environment
+
+The full view's footer has two rows: the three-meter version (linked to its release notes) and the
+three revision, then the backend and the GPU name. An amber `WebGL2 fallback` badge means
+`WebGPURenderer` couldn't get WebGPU. Its checkbox (off by default) shows the footer in the compact
+HUD too. The same data is on the monitor:
+
+```ts
+monitor.getEnvironment();
+// { three: "186", backend: "webgpu", fallback: false, gpu: "Apple metal-3" }
+```
+
+`backend` is `null` until `WebGPURenderer.init()` settles. `gpu` comes from WebGPU's adapter info or
+WebGL's unmasked renderer string, and is `null` where the browser hides it. Chrome's WebGPU gives
+vendor and architecture, not the model.
+
+## GPU timing
+
+On WebGL2 the monitor uses `EXT_disjoint_timer_query_webgl2`, which Chrome and Edge expose. Safari
+and Firefox don't, so the GPU row shows `—` and `sample.gpu.available` is `false`.
+
+On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a frame or two late.
 
 ## Theme
 
@@ -121,93 +208,14 @@ The resolved theme lands on `data-theme` of `.perf-hud` and `.perf-monitor`. To 
 palette, override the `--perf-*` custom properties (`bg`, `fg`, `fg-dim`, `muted`, `row`,
 `border`, `accent`, `warn`, `shadow`) on those selectors. `warn` is the over-budget amber.
 
-## GPU timing
-
-On WebGL2 the monitor uses `EXT_disjoint_timer_query_webgl2`, which Chrome and Edge expose. Safari
-and Firefox don't, so the GPU row shows `—` and `sample.gpu.available` is `false`.
-
-On WebGPU, construct the renderer with `trackTimestamp: true`. Timings resolve a frame or two late.
-
-## Environment
-
-The full view's footer has two rows: the three-meter version (linked to its release notes) and the
-three revision, then the backend and the GPU name. An amber `WebGL2 fallback` badge means
-`WebGPURenderer` couldn't get WebGPU. Its checkbox (off by default) shows the footer in the compact
-HUD too. The same data is on the monitor:
-
-```ts
-monitor.getEnvironment();
-// { three: "186", backend: "webgpu", fallback: false, gpu: "Apple metal-3" }
-```
-
-`backend` is `null` until `WebGPURenderer.init()` settles. `gpu` comes from WebGPU's adapter info or
-WebGL's unmasked renderer string, and is `null` where the browser hides it. Chrome's WebGPU gives
-vendor and architecture, not the model.
-
-## Reading the panel
-
-Every row has an icon, its value, and a checkbox on the right that puts it in the compact HUD. Hover
-a label for a one-line explanation of the metric and what a bad reading means, or tick **explain
-metrics** to show them all under the rows (also works on touch).
-
-## Budgets
-
-A value past its budget turns amber in the full view and the compact HUD, and its tooltip names the
-budget. The FPS, CPU and GPU graphs draw the budget as a dashed line once the series reaches it; the
-scale never stretches to fit it, so a quiet graph keeps its detail.
-
-Timing budgets come from `targetFps` (60 by default): FPS at least 95% of it, 1% low at least half,
-CPU and GPU within one frame (16.7 ms), frame p99 within one and a half. Counts have no default,
-since what's reasonable depends on the scene. Set your own:
-
-```ts
-mountPerfHud(monitor, { budgets: { targetFps: 120, calls: 500, triangles: 2_000_000 } });
-hud.setBudgets({ gpu: null }); // null drops a default; false drops them all
-```
-
-`PerfHud` takes the same `budgets` prop and applies changes live.
-
-## Stutter
-
-Average FPS hides a hitch every few seconds. Three rows in the full view catch it, and any of them
-can be ticked into the compact HUD:
-
-- **1% low**: mean FPS across the slowest 1% of frames.
-- **Frame p99**: 99% of frames finish within this many ms.
-- **Hitches**: frames over twice the median frame time.
-
-They cover the last `frameStatsSize` frames (1000 by default, about 16 s at 60 Hz). Gaps over a
-second, like a hidden tab, are left out. Read them with `monitor.getFrameStats()`:
-
-```ts
-monitor.getFrameStats();
-// { frames: 1000, lowFps: 97.6, p99Ms: 10.2, hitches: 3 }
-```
-
-## Bug reports
-
-The **report** row's copy button puts a Markdown snapshot on the clipboard: versions, backend, GPU,
-the current metrics, the stutter stats, the viewport and the user agent. Paste it into an issue.
-`formatReport(monitor)` from `@zkmake/three-meter/ui` returns the same text.
-
-```text
-three-meter v0.5.0 · three r186 · WebGL2 · Apple M4 Max
-FPS 120 · 1% low 98 · p99 10.2 ms · hitches 3 / 1,000 frames
-CPU 0.2 ms · GPU 0.7 ms
-Calls 1 · passes 1 · triangles 24,000 · lines 0 · points 0
-Geometries 1 · textures 1 · shaders 1
-Viewport 1280×720 @2x
-Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) …
-```
-
 ## Examples
 
 [`examples/site`](examples/site) is what runs at [three-meter.pages.dev](https://three-meter.pages.dev/):
 one Vite app with both integrations of the same scene, swapped from the header.
 [`src/demos/vanilla.ts`](examples/site/src/demos/vanilla.ts) is plain three with `mountPerfHud`;
 [`src/demos/r3f.tsx`](examples/site/src/demos/r3f.tsx) is React Three Fiber with `PerfSampler` and
-`PerfHud`. `?r3f` opens on Fiber, `?webgpu` uses `WebGPURenderer` in either, `?count=` scales the
-scene. The header's theme toggle sets the page theme and the HUD's `theme` layer together; the row
+`PerfHud`. Both set a 250K triangle budget on top of the timing defaults. `?r3f` opens on Fiber,
+`?webgpu` uses `WebGPURenderer` in either, `?count=` scales the scene. The header's theme toggle sets the page theme and the HUD's `theme` layer together; the row
 inside the panel overrides the HUD alone. Run `bun run dev` inside it.
 
 ## Shipping it
