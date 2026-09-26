@@ -13,13 +13,31 @@ Live demo: [three-meter.pages.dev](https://three-meter.pages.dev/), with a vanil
 React Three Fiber take on the same scene. Add `?webgpu` for the WebGPU renderer and `?count=30000` to
 load the scene up past the demo's triangle budget.
 
-<p align="center">
-  <img
-    src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png"
-    width="320"
-    alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values, the FPS graph showing a dashed budget line; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders), with the triangle count in amber for being over its budget; a top costs toggle; and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Three discs beside it: a drag grip, the compact/full toggle and dim on leave."
-  />
-</p>
+<table align="center">
+  <tr>
+    <th></th>
+    <th>Expanded</th>
+    <th>Collapsed</th>
+  </tr>
+  <tr>
+    <th>Dark</th>
+    <td valign="top">
+      <img src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png" width="318" alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values, the FPS graph showing a dashed budget line; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders), with the triangle count in amber for being over its budget; a top costs toggle; and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Three discs beside it: a drag grip, the compact/full toggle and dim on leave." />
+    </td>
+    <td valign="top">
+      <img src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-compact.png" width="314" alt="The HUD collapsed, dark theme: FPS and GPU sparklines with a dashed budget line on the FPS graph, a two-column grid of metrics with icons (FPS, calls, CPU, GPU, 1% low, frame p99, triangles in amber for being over budget, geometries, textures, shaders), and the footer with versions, backend and GPU. Three discs beside it: drag, expand and dim on leave." />
+    </td>
+  </tr>
+  <tr>
+    <th>Light</th>
+    <td valign="top">
+      <img src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full-light.png" width="318" alt="The HUD in full mode, light theme. Option rows for theme (light, system, dark), explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values, the FPS graph showing a dashed budget line; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders), with the triangle count in amber for being over its budget; a top costs toggle; and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Three discs beside it: a drag grip, the compact/full toggle and dim on leave." />
+    </td>
+    <td valign="top">
+      <img src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-compact-light.png" width="314" alt="The HUD collapsed, light theme: FPS and GPU sparklines with a dashed budget line on the FPS graph, a two-column grid of metrics with icons (FPS, calls, CPU, GPU, 1% low, frame p99, triangles in amber for being over budget, geometries, textures, shaders), and the footer with versions, backend and GPU. Three discs beside it: drag, expand and dim on leave." />
+    </td>
+  </tr>
+</table>
 
 - **Spot problems at a glance.** Values past their budget turn amber, and every metric explains
   itself on hover, so you don't need to know what a p99 is to see that one is bad.
