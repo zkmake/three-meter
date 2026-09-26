@@ -16,7 +16,7 @@ load the scene up.
   <img
     src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png"
     width="320"
-    alt="The HUD in full mode, dark theme: a theme row (light, system, dark), a dim-on-leave toggle, FPS, CPU and GPU sparklines with live values, and a checkbox list of counters (FPS, calls, CPU, GPU, triangles, lines, points, render passes, geometries, textures, shaders) choosing what the compact card shows. Two discs beside it: a drag grip and the compact/full toggle."
+    alt="The HUD in full mode, dark theme: a theme row (light, system, dark), a dim-on-leave toggle, FPS, CPU and GPU sparklines with live values, and a checkbox list of counters (FPS, calls, CPU, GPU, triangles, lines, points, render passes, geometries, textures, shaders) choosing what the compact card shows, then a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Two discs beside it: a drag grip and the compact/full toggle."
   />
 </p>
 
