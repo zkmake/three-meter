@@ -56,6 +56,32 @@ type FrameStats = {
   p99Ms: number;
 };
 
+/** One row of {@link SceneCost}: a mesh (by label and geometry) or a material. */
+type CostEntry = {
+  /** Draw calls in the main pass. */
+  calls: number;
+  /** Instances drawn: an `InstancedMesh`'s count, 1 for anything else, summed over objects. */
+  instances: number;
+  /** Object name, else geometry name, else type; for materials, name else type. */
+  label: string;
+  /** The three objects behind this row, for inspecting in the console. */
+  objects: unknown[];
+  triangles: number;
+};
+
+/**
+ * Where the main pass's draw calls and triangles come from, estimated from
+ * the scene graph. Rows are sorted by calls, then triangles.
+ */
+type SceneCost = {
+  calls: number;
+  /** Grouped by material. */
+  materials: CostEntry[];
+  /** Grouped by label and geometry, so copies of one mesh share a row. */
+  meshes: CostEntry[];
+  triangles: number;
+};
+
 /** `webgl` is WebGL 1, which three dropped in r163. */
 type RenderBackend = "webgpu" | "webgl2" | "webgl";
 
@@ -112,6 +138,7 @@ type PerformanceMonitorOptions = {
 };
 
 export type {
+  CostEntry,
   Environment,
   FrameStats,
   GpuTiming,
@@ -121,5 +148,6 @@ export type {
   RenderCounts,
   ResourceCounts,
   Sample,
+  SceneCost,
   TimingMetric,
 };

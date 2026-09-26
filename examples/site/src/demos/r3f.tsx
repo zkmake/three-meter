@@ -71,7 +71,7 @@ function Cubes({ count }: { count: number }) {
   });
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]} key={count}>
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]} key={count} name="cubes">
       <boxGeometry args={[0.4, 0.4, 0.4]} />
       <meshStandardMaterial roughness={0.5} />
     </instancedMesh>

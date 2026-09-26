@@ -1,6 +1,6 @@
 import { version } from "../../package.json";
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
-import type { FrameStats, Sample, TimingMetric } from "../core/types.ts";
+import type { CostEntry, FrameStats, Sample, TimingMetric } from "../core/types.ts";
 import {
   type BudgetKey,
   type Budgets,
@@ -106,6 +106,35 @@ const RELEASE_URL = `https://github.com/zkmake/three-meter/releases/tag/v${versi
 
 /** How long the report button says `copied` / `failed` before reading `copy` again. */
 const COPY_FEEDBACK_MS = 1500;
+
+/** Walking the scene graph isn't free; the top-costs list refreshes at 2 Hz while open. */
+const COSTS_INTERVAL_MS = 500;
+const COSTS_ROWS = 5;
+
+type CostGroup = "meshes" | "materials";
+type CostSort = "calls" | "triangles";
+
+const COST_GROUPS: { group: CostGroup; label: string }[] = [
+  { group: "meshes", label: "meshes" },
+  { group: "materials", label: "materials" },
+];
+
+const COSTS_HELP =
+  "The scene's biggest draw costs in the main render pass, estimated from the scene graph. Hidden and off-screen objects are left out; shadow and post-processing passes aren't counted. Click a row to log its objects to the console.";
+
+/** `×2,000` for instances or copies; nothing for a single object. */
+const copiesOf = (entry: CostEntry) =>
+  entry.instances > 1 ? `×${formatCount(entry.instances)}` : "";
+
+const costTitle = (entry: CostEntry) => {
+  const objects = entry.objects.length;
+  const shape =
+    entry.instances > objects
+      ? `${formatCount(entry.instances)} instances in ${objects === 1 ? "one object" : `${objects} objects`}`
+      : `${formatCount(objects)} ${objects === 1 ? "object" : "separate objects"}`;
+
+  return `${entry.label}: ${shape}, ${formatCount(entry.calls)} draw ${entry.calls === 1 ? "call" : "calls"}, ${formatCount(entry.triangles)} triangles. Click to log to the console.`;
+};
 
 const readTiming = (sample: Sample, metric: TimingMetric) => {
   switch (metric) {
@@ -304,6 +333,14 @@ class PerformanceView {
   private lastPaintAt = 0;
   private readonly resizeObserver: ResizeObserver;
   private readonly unsubscribe: () => void;
+  private costsOpen = false;
+  private costGroup: CostGroup = "meshes";
+  private costSort: CostSort = "calls";
+  private lastCostsAt = -Infinity;
+  private costsBodyEl!: HTMLElement;
+  private costsListEl!: HTMLElement;
+  private readonly costGroupRadios = new Map<CostGroup, HTMLButtonElement>();
+  private readonly costSortButtons = new Map<CostSort, HTMLButtonElement>();
 
   constructor(options: PerformanceViewOptions) {
     this.monitor = options.monitor;
@@ -413,7 +450,80 @@ class PerformanceView {
       this.paintNumber(config, this.statValueEls.get(config.key)!, sample, stats);
     }
 
+    if (this.costsOpen && performance.now() - this.lastCostsAt >= COSTS_INTERVAL_MS) {
+      this.renderCosts();
+    }
+
     this.renderFooter();
+  }
+
+  private renderCosts() {
+    this.lastCostsAt = performance.now();
+    const cost = this.monitor.getSceneCost();
+
+    if (!cost) {
+      this.costsListEl.replaceChildren(this.costsNote("No scene rendered yet."));
+
+      return;
+    }
+
+    const entries = [...(this.costGroup === "meshes" ? cost.meshes : cost.materials)];
+
+    if (this.costSort === "triangles") {
+      entries.sort((a, b) => b.triangles - a.triangles || b.calls - a.calls);
+    }
+
+    if (entries.length === 0) {
+      this.costsListEl.replaceChildren(this.costsNote("Nothing drawn."));
+
+      return;
+    }
+
+    const rows = entries.slice(0, COSTS_ROWS).map((entry) => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "perf-monitor__cost";
+      row.title = costTitle(entry);
+
+      const name = document.createElement("span");
+      name.className = "perf-monitor__cost-name";
+      name.textContent = entry.label;
+
+      const copies = copiesOf(entry);
+
+      if (copies) {
+        const suffix = document.createElement("span");
+        suffix.className = "perf-monitor__cost-copies";
+        suffix.textContent = ` ${copies}`;
+        name.append(suffix);
+      }
+
+      const calls = document.createElement("span");
+      calls.className = "perf-monitor__cost-value";
+      calls.textContent = formatCount(entry.calls);
+
+      const triangles = document.createElement("span");
+      triangles.className = "perf-monitor__cost-value";
+      triangles.textContent = formatCount(entry.triangles);
+
+      row.append(name, calls, triangles);
+      row.addEventListener("click", () => {
+        // oxlint-disable-next-line no-console -- handing the objects to devtools is the feature
+        console.log(`three-meter: ${entry.label}`, entry.objects);
+      });
+
+      return row;
+    });
+
+    this.costsListEl.replaceChildren(...rows);
+  }
+
+  private costsNote(text: string) {
+    const note = document.createElement("div");
+    note.className = "perf-monitor__costs-note";
+    note.textContent = text;
+
+    return note;
   }
 
   /** The monitor caches the environment once its backend settles; until then this re-reads. */
@@ -718,7 +828,7 @@ class PerformanceView {
     footerBody.append(softwareRow, this.footerHardwareEl);
     footer.append(createIcon("info", "perf-monitor__icon"), footerBody, this.infoCheckbox);
 
-    this.element.append(hud, options, graphs, stats, footer);
+    this.element.append(hud, options, graphs, stats, this.buildCosts(), footer);
   }
 
   private rebuildHud() {
@@ -817,6 +927,97 @@ class PerformanceView {
     for (const [mode, radio] of this.themeRadios) {
       radio.setAttribute("aria-checked", String(mode === this.theme.effective));
     }
+  }
+
+  /** "top costs": a toggle row, then meshes / materials and a sortable top five. */
+  private buildCosts() {
+    const section = document.createElement("div");
+    section.className = "perf-monitor__section perf-monitor__costs";
+
+    const toggleRow = document.createElement("label");
+    toggleRow.className = "perf-monitor__row";
+    toggleRow.title = COSTS_HELP;
+
+    const label = document.createElement("span");
+    label.className = "perf-monitor__label";
+    label.textContent = "top costs";
+
+    const checkbox = this.buildCheckbox(false, "Show the scene's biggest draw costs", (on) => {
+      this.costsOpen = on;
+      this.costsBodyEl.hidden = !on;
+
+      if (on) {
+        this.renderCosts();
+      }
+    });
+
+    toggleRow.append(createIcon("flame", "perf-monitor__icon"), label, checkbox);
+
+    this.costsBodyEl = document.createElement("div");
+    this.costsBodyEl.className = "perf-monitor__costs-body";
+    this.costsBodyEl.hidden = true;
+
+    const head = document.createElement("div");
+    head.className = "perf-monitor__cost perf-monitor__cost--head";
+
+    const segment = document.createElement("div");
+    segment.className = "perf-monitor__segment";
+    segment.setAttribute("role", "radiogroup");
+    segment.setAttribute("aria-label", "Group costs by");
+
+    for (const option of COST_GROUPS) {
+      const radio = document.createElement("button");
+      radio.type = "button";
+      radio.className = "perf-monitor__segment-option perf-monitor__segment-option--text";
+      radio.setAttribute("role", "radio");
+      radio.setAttribute("aria-checked", String(option.group === this.costGroup));
+      radio.textContent = option.label;
+      radio.addEventListener("click", () => {
+        this.costGroup = option.group;
+
+        for (const [group, button] of this.costGroupRadios) {
+          button.setAttribute("aria-checked", String(group === option.group));
+        }
+
+        this.renderCosts();
+      });
+      this.costGroupRadios.set(option.group, radio);
+      segment.append(radio);
+    }
+
+    head.append(segment);
+
+    for (const sort of ["calls", "triangles"] as const) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "perf-monitor__cost-sort";
+      button.textContent = sort === "calls" ? "calls" : "tris";
+      button.title = `Sort by ${sort === "calls" ? "draw calls" : "triangles"}`;
+      button.setAttribute("aria-pressed", String(sort === this.costSort));
+      button.addEventListener("click", () => {
+        this.costSort = sort;
+
+        for (const [key, other] of this.costSortButtons) {
+          other.setAttribute("aria-pressed", String(key === sort));
+        }
+
+        this.renderCosts();
+      });
+      this.costSortButtons.set(sort, button);
+      head.append(button);
+    }
+
+    this.costsListEl = document.createElement("div");
+    this.costsListEl.className = "perf-monitor__costs-list";
+
+    const hint = document.createElement("span");
+    hint.className = "perf-monitor__hint";
+    hint.textContent = COSTS_HELP;
+
+    this.costsBodyEl.append(head, this.costsListEl, hint);
+    section.append(toggleRow, this.costsBodyEl);
+
+    return section;
   }
 
   private buildReportRow() {

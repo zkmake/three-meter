@@ -66,6 +66,7 @@ const createVanillaDemo: DemoFactory = async (host, options) => {
   const geometry = new BoxGeometry(0.4, 0.4, 0.4);
   const material = new MeshStandardMaterial({ roughness: 0.5 });
   const cubes = new InstancedMesh(geometry, material, options.count);
+  cubes.name = "cubes";
   const matrix = new Matrix4();
   const color = new Color();
 

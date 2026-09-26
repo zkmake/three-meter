@@ -27,6 +27,8 @@ load the scene up past the demo's triangle budget.
   drops every few seconds while the FPS average still reads 60.
 - **Real GPU time** from timer queries on WebGPU, and on WebGL in Chrome and Edge, not an estimate
   from frame intervals.
+- **Find what's expensive.** A breakdown of draw calls and triangles by mesh and material shows
+  which objects to instance or merge.
 - **One-click bug reports.** Copy versions, backend, GPU and the current numbers as Markdown.
 - **Stays out of the way.** The sampler and the card are separate components, so toggling the HUD
   never remounts your canvas. The card docks to a screen edge, remembers where you put it, and hides
@@ -142,10 +144,37 @@ hud.setBudgets({ gpu: null }); // null drops a default; false drops them all
 
 `PerfHud` takes the same `budgets` prop and applies changes live.
 
+## Top costs
+
+The HUD tells you there are 400 draw calls; **top costs** tells you which objects they come from.
+Tick it in the full view for the five biggest costs in the main render pass, grouped by **meshes** or
+**materials**, sorted by draw calls or triangles. Click a row to log its three objects to the
+console.
+
+```text
+                     calls   tris
+tree ×300              300   9,600    ← 300 separate meshes: instance or merge them
+house                    6      12    ← one draw per material in the array
+dome                     2   7,936    ← transparent and double-sided draws twice
+grass ×20,000            1  40,000    ← already instanced
+```
+
+Meshes with the same name and geometry share a row, so unmerged copies stand out. The numbers are
+estimated from the scene graph the way three walks it: hidden objects, other layers and anything
+outside the camera's frustum are left out. Against three's own `renderer.info` on a test scene they
+matched exactly. Shadow maps and post-processing passes aren't included; the main pass is the render
+call that drew the most, so a full-screen quad rendered last doesn't stand in for the scene. It
+walks the scene only while open, twice a second.
+
+```ts
+monitor.getSceneCost();
+// { calls: 309, triangles: 57548, meshes: [{ label: "tree", calls: 300, … }, …], materials: […] }
+```
+
 ## Bug reports
 
 The **report** row's copy button puts a Markdown snapshot on the clipboard: versions, backend, GPU,
-the current metrics, the stutter stats, the viewport and the user agent. Paste it into an issue.
+the current metrics, the stutter stats, the top three meshes, the viewport and the user agent. Paste it into an issue.
 `formatReport(monitor)` from `@zkmake/three-meter/ui` returns the same text.
 
 ```text
@@ -154,6 +183,7 @@ FPS 120 · 1% low 98 · p99 10.2 ms · hitches 3 / 1,000 frames
 CPU 0.2 ms · GPU 0.7 ms
 Calls 1 · passes 1 · triangles 24,000 · lines 0 · points 0
 Geometries 1 · textures 1 · shaders 1
+Top: tree ×300 (300 calls, 9,600 tris) · house (6 calls, 12 tris) · dome (2 calls, 7,936 tris)
 Viewport 1280×720 @2x
 Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) …
 ```

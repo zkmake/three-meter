@@ -10,6 +10,7 @@ export { PerformanceMonitor } from "./core/performance-monitor.ts";
 export { RingBuffer } from "./core/ring-buffer.ts";
 export { wrapAnimationLoop } from "./core/wrap-animation-loop.ts";
 export type {
+  CostEntry,
   Environment,
   FrameStats,
   GpuTiming,
@@ -19,5 +20,6 @@ export type {
   RenderCounts,
   ResourceCounts,
   Sample,
+  SceneCost,
   TimingMetric,
 } from "./core/types.ts";

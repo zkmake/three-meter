@@ -2,12 +2,14 @@ import { readEnvironment } from "./environment.ts";
 import { computeFrameStats } from "./frame-stats.ts";
 import { GpuTimer } from "./gpu-timer.ts";
 import { RingBuffer } from "./ring-buffer.ts";
+import { computeSceneCost } from "./scene-cost.ts";
 import type {
   Environment,
   FrameStats,
   PerfRenderer,
   PerformanceMonitorOptions,
   Sample,
+  SceneCost,
   TimingMetric,
 } from "./types.ts";
 
@@ -55,6 +57,9 @@ class PerformanceMonitor {
   private readonly gpuHistory: RingBuffer;
   private readonly frameIntervals: RingBuffer;
   private frameStats: FrameStats | null = null;
+  /** The render call with the most draw calls this frame, and the scene and camera it drew. */
+  private mainPassCalls = -1;
+  private mainPass: { camera: WeakRef<object>; scene: WeakRef<object> } | null = null;
   private cpuStart = 0;
   private lastBeginAt: number | null = null;
   private frameFps = 0;
@@ -84,11 +89,13 @@ class PerformanceMonitor {
 
     renderer.render = (...args: never[]) => {
       this.renderPasses += 1;
+      const callsBefore = frameCalls(renderer.info);
 
       try {
         return this.originalRender.apply(renderer, args);
       } finally {
         this.lastRenderEndAt = performance.now();
+        this.notePass(args[0], args[1], frameCalls(renderer.info) - callsBefore);
       }
     };
 
@@ -118,6 +125,7 @@ class PerformanceMonitor {
     this.cpuStart = now;
     this.lastRenderEndAt = null;
     this.renderPasses = 0;
+    this.mainPassCalls = -1;
     this.renderer.info.reset();
     this.gpuTimer?.begin();
   }
@@ -185,6 +193,19 @@ class PerformanceMonitor {
   }
 
   /**
+   * Where the main pass's draw calls and triangles come from, by mesh and by
+   * material. Walks the scene graph, so read it on demand (the HUD does, at
+   * 2 Hz while its section is open), not every frame. `null` before the first
+   * render, or once the scene is garbage collected.
+   */
+  getSceneCost(): SceneCost | null {
+    const scene = this.mainPass?.scene.deref();
+    const camera = this.mainPass?.camera.deref();
+
+    return scene && camera ? computeSceneCost(scene, camera) : null;
+  }
+
+  /**
    * three revision, backend and GPU name. Cached once the backend is known;
    * before `WebGPURenderer.init()` settles it, `backend` is `null` and the
    * next call reads again.
@@ -213,6 +234,25 @@ class PerformanceMonitor {
     this.gpuHistory.clear();
     this.frameIntervals.clear();
     this.frameStats = null;
+    this.mainPass = null;
+  }
+
+  /**
+   * The main pass is the render call that drew the most, so a post-processing
+   * quad rendered last doesn't stand in for the scene. Weak references: the
+   * monitor never keeps a scene alive.
+   */
+  private notePass(scene: unknown, camera: unknown, calls: number) {
+    if (
+      calls > this.mainPassCalls &&
+      typeof scene === "object" &&
+      scene !== null &&
+      typeof camera === "object" &&
+      camera !== null
+    ) {
+      this.mainPassCalls = calls;
+      this.mainPass = { camera: new WeakRef(camera), scene: new WeakRef(scene) };
+    }
   }
 
   private buildEmptySample(): Sample {
