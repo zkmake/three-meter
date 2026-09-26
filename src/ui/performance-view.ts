@@ -4,7 +4,8 @@ import type { FrameStats, Sample, TimingMetric } from "../core/types.ts";
 import { copyText } from "./clipboard.ts";
 import { formatCount } from "./format.ts";
 import { HudSettings } from "./hud-settings.ts";
-import { createIcon } from "./icons.ts";
+import { createIcon, type IconName } from "./icons.ts";
+import { METRIC_HELP } from "./metric-help.ts";
 import { backendLabel, formatReport } from "./report.ts";
 import { drawSparkline, type SparklineStyle } from "./sparkline.ts";
 import { applyTheme, HudTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
@@ -28,6 +29,7 @@ type PerformanceViewOptions = {
 
 type TimingConfig = {
   format: (value: number) => string;
+  icon: IconName;
   label: string;
   metric: TimingMetric;
   /** Canvas can't read CSS custom properties, so the sparkline palette lives here per theme. */
@@ -36,6 +38,7 @@ type TimingConfig = {
 };
 
 type NumberConfig = {
+  icon: IconName;
   key: string;
   label: string;
   read: (sample: Sample, stats: FrameStats) => string;
@@ -44,6 +47,7 @@ type NumberConfig = {
 const TIMINGS: TimingConfig[] = [
   {
     format: (value) => Math.round(value).toString(),
+    icon: "gauge",
     label: "FPS",
     metric: "fps",
     style: {
@@ -54,6 +58,7 @@ const TIMINGS: TimingConfig[] = [
   },
   {
     format: (value) => value.toFixed(1),
+    icon: "cpu",
     label: "CPU",
     metric: "cpu",
     style: {
@@ -64,6 +69,7 @@ const TIMINGS: TimingConfig[] = [
   },
   {
     format: (value) => value.toFixed(1),
+    icon: "zap",
     label: "GPU",
     metric: "gpu",
     style: {
@@ -100,52 +106,76 @@ const isTimingAvailable = (sample: Sample, metric: TimingMetric) =>
   metric !== "gpu" || sample.gpu.available;
 
 const NUMBERS: NumberConfig[] = [
-  { key: "fps", label: "FPS", read: (sample) => Math.round(sample.fps).toString() },
-  { key: "calls", label: "Calls", read: (sample) => formatCount(sample.render.calls) },
-  { key: "cpu", label: "CPU", read: (sample) => sample.cpu.toFixed(1) },
+  { icon: "gauge", key: "fps", label: "FPS", read: (sample) => Math.round(sample.fps).toString() },
   {
+    icon: "layers",
+    key: "calls",
+    label: "Calls",
+    read: (sample) => formatCount(sample.render.calls),
+  },
+  { icon: "cpu", key: "cpu", label: "CPU", read: (sample) => sample.cpu.toFixed(1) },
+  {
+    icon: "zap",
     key: "gpu",
     label: "GPU",
     read: (sample) => (sample.gpu.available ? sample.gpu.ms.toFixed(1) : "—"),
   },
   {
+    icon: "trendingDown",
     key: "low",
     label: "1% low",
     read: (_sample, stats) => (stats.frames ? Math.round(stats.lowFps).toString() : "—"),
   },
   {
+    icon: "timer",
     key: "p99",
     label: "Frame p99",
     read: (_sample, stats) => (stats.frames ? stats.p99Ms.toFixed(1) : "—"),
   },
   {
+    icon: "activity",
     key: "hitches",
     label: "Hitches",
     read: (_sample, stats) => (stats.frames ? formatCount(stats.hitches) : "—"),
   },
   {
+    icon: "triangle",
     key: "triangles",
     label: "Triangles",
     read: (sample) => formatCount(sample.render.triangles),
   },
-  { key: "lines", label: "Lines", read: (sample) => formatCount(sample.render.lines) },
-  { key: "points", label: "Points", read: (sample) => formatCount(sample.render.points) },
   {
+    icon: "spline",
+    key: "lines",
+    label: "Lines",
+    read: (sample) => formatCount(sample.render.lines),
+  },
+  {
+    icon: "circleDot",
+    key: "points",
+    label: "Points",
+    read: (sample) => formatCount(sample.render.points),
+  },
+  {
+    icon: "repeat",
     key: "passes",
     label: "Render passes",
     read: (sample) => formatCount(sample.render.passes),
   },
   {
+    icon: "box",
     key: "geometries",
     label: "Geometries",
     read: (sample) => formatCount(sample.resources.geometries),
   },
   {
+    icon: "image",
     key: "textures",
     label: "Textures",
     read: (sample) => formatCount(sample.resources.textures),
   },
   {
+    icon: "palette",
     key: "shaders",
     label: "Shaders",
     read: (sample) => formatCount(sample.resources.programs),
@@ -426,7 +456,21 @@ class PerformanceView {
     dimLabel.textContent = "dim on leave";
 
     dimRow.append(createIcon("blend", "perf-monitor__icon"), dimLabel, this.dimCheckbox);
-    options.append(themeRow, dimRow, this.buildReportRow());
+
+    // View-local, not a setting: it's a way to learn the panel, not a preference.
+    const explainRow = document.createElement("label");
+    explainRow.className = "perf-monitor__row";
+
+    const explainCheckbox = this.buildCheckbox(false, "Explain each metric", (on) =>
+      this.element.classList.toggle("perf-monitor--explain", on),
+    );
+
+    const explainLabel = document.createElement("span");
+    explainLabel.className = "perf-monitor__label";
+    explainLabel.textContent = "explain metrics";
+
+    explainRow.append(createIcon("help", "perf-monitor__icon"), explainLabel, explainCheckbox);
+    options.append(themeRow, dimRow, explainRow, this.buildReportRow());
 
     const graphs = document.createElement("div");
     graphs.className = "perf-monitor__graphs";
@@ -438,10 +482,11 @@ class PerformanceView {
       const canvas = document.createElement("canvas");
       canvas.className = "perf-monitor__canvas";
 
-      const overlay = document.createElement("div");
-      overlay.className = "perf-monitor__graph-overlay";
+      // The whole overlay is the label, so a click anywhere on the graph toggles it.
+      const overlay = document.createElement("label");
+      overlay.className = "perf-monitor__graph-overlay perf-monitor__graph-overlay--toggle";
 
-      const head = document.createElement("label");
+      const head = document.createElement("span");
       head.className = "perf-monitor__graph-head";
 
       const checkbox = this.buildCheckbox(
@@ -454,14 +499,19 @@ class PerformanceView {
       const label = document.createElement("span");
       label.className = "perf-monitor__graph-label";
       label.textContent = config.label;
+      label.title = METRIC_HELP[config.metric] ?? "";
 
       const value = document.createElement("span");
       value.className = "perf-monitor__graph-value";
       value.textContent = "—";
       this.graphValueEls.set(config.metric, value);
 
-      head.append(checkbox, label);
-      overlay.append(head, value);
+      const tail = document.createElement("span");
+      tail.className = "perf-monitor__graph-head";
+      tail.append(value, checkbox);
+
+      head.append(createIcon(config.icon, "perf-monitor__icon"), label);
+      overlay.append(head, tail);
       graph.append(canvas, overlay);
       graphs.append(graph);
 
@@ -487,20 +537,27 @@ class PerformanceView {
       );
       this.statCheckboxes.set(config.key, checkbox);
 
+      const help = METRIC_HELP[config.key] ?? "";
+
       const label = document.createElement("span");
       label.className = "perf-monitor__label";
       label.textContent = config.label;
+      label.title = help;
 
       const value = document.createElement("span");
       value.className = "perf-monitor__value";
       value.textContent = "—";
       this.statValueEls.set(config.key, value);
 
-      rowEl.append(checkbox, label, value);
+      const hint = document.createElement("span");
+      hint.className = "perf-monitor__hint";
+      hint.textContent = help;
+
+      rowEl.append(createIcon(config.icon, "perf-monitor__icon"), label, value, checkbox, hint);
       stats.append(rowEl);
     }
 
-    // Checkbox first like the stat rows; the checkbox hides in compact, the rows don't.
+    // Icon, rows, checkbox like the stat rows; icon and checkbox hide in compact, the rows don't.
     const footer = document.createElement("div");
     footer.className = "perf-monitor__footer";
 
@@ -540,7 +597,7 @@ class PerformanceView {
 
     this.footerHardwareEl.append(this.footerBackendEl, this.footerGpuEl);
     footerBody.append(softwareRow, this.footerHardwareEl);
-    footer.append(this.infoCheckbox, footerBody);
+    footer.append(createIcon("info", "perf-monitor__icon"), footerBody, this.infoCheckbox);
 
     this.element.append(hud, options, graphs, stats, footer);
   }
@@ -574,6 +631,7 @@ class PerformanceView {
       const label = document.createElement("span");
       label.className = "perf-monitor__graph-label";
       label.textContent = config.label;
+      label.title = METRIC_HELP[config.metric] ?? "";
 
       const value = document.createElement("span");
       value.className = "perf-monitor__graph-value";
@@ -602,6 +660,7 @@ class PerformanceView {
       const label = document.createElement("span");
       label.className = "perf-monitor__hud-label";
       label.textContent = config.label;
+      label.title = METRIC_HELP[config.key] ?? "";
 
       const value = document.createElement("span");
       value.className = "perf-monitor__hud-value";

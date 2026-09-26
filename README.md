@@ -16,7 +16,7 @@ load the scene up.
   <img
     src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png"
     width="320"
-    alt="The HUD in full mode, dark theme: a theme row (light, system, dark), a dim-on-leave toggle, FPS, CPU and GPU sparklines with live values, and a checkbox list of counters (FPS, calls, CPU, GPU, triangles, lines, points, render passes, geometries, textures, shaders) choosing what the compact card shows, then a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Two discs beside it: a drag grip and the compact/full toggle."
+    alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), dim on leave, explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders); and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Two discs beside it: a drag grip and the compact/full toggle."
   />
 </p>
 
@@ -142,6 +142,12 @@ monitor.getEnvironment();
 `backend` is `null` until `WebGPURenderer.init()` settles. `gpu` comes from WebGPU's adapter info or
 WebGL's unmasked renderer string, and is `null` where the browser hides it. Chrome's WebGPU gives
 vendor and architecture, not the model.
+
+## Reading the panel
+
+Every row has an icon, its value, and a checkbox on the right that puts it in the compact HUD. Hover
+a label for a one-line explanation of the metric and what a bad reading means, or tick **explain
+metrics** to show them all under the rows (also works on touch).
 
 ## Stutter
 
