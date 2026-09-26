@@ -378,8 +378,17 @@ const PERF_HUD_STYLES = `
 }
 
 .perf-monitor__hud-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--perf-muted);
   font-size: 10px;
+}
+
+.perf-monitor__hud-label .perf-monitor__icon,
+.perf-monitor__hud-graph .perf-monitor__icon {
+  width: 11px;
+  height: 11px;
 }
 
 .perf-monitor__hud-value {
@@ -597,6 +606,11 @@ const PERF_HUD_STYLES = `
   color: var(--perf-fg);
   outline: 1px solid color-mix(in srgb, var(--perf-accent) 60%, transparent);
   outline-offset: 1px;
+}
+
+/* Dim on: the mark takes the accent, so on and off differ even under the hover ring. */
+.perf-hud__dim[aria-pressed="true"] {
+  color: var(--perf-accent);
 }
 `;
 

@@ -1,8 +1,8 @@
 /**
  * The floating HUD: a fixed host docked to a screen edge, the metrics card
- * inside it, and two discs on the inward side (drag grip, compact/full toggle)
- * that stay hidden until the pointer is near or someone taps. Dim-on-leave
- * comes from the settings; the palette from `theme`. This is what the React
+ * inside it, and three discs on the inward side (drag grip, compact/full
+ * toggle, dim on leave) that stay hidden until the pointer is near or someone
+ * taps. The dim disc flips `settings.dim`; the palette comes from `theme`. This is what the React
  * `PerfHud` wraps; a vanilla three app calls it directly.
  */
 import type { PerformanceMonitor } from "../core/performance-monitor.ts";
@@ -68,11 +68,12 @@ type PerfHudHandle = {
   dispose: () => void;
 };
 
-const disc = (label: string, className: string, icon: "grip" | "sliders") => {
+const disc = (label: string, className: string, icon: "blend" | "grip" | "sliders") => {
   const button = document.createElement("button");
   button.type = "button";
   button.className = `perf-hud__disc ${className}`.trim();
   button.setAttribute("aria-label", label);
+  button.title = label;
   button.append(createIcon(icon, "perf-hud__icon"));
 
   return button;
@@ -104,7 +105,9 @@ const mountPerfHud = (
   tools.className = "perf-hud__tools";
   const grip = disc("Drag performance panel", "perf-hud__drag", "grip");
   const toggle = disc("Toggle full performance metrics", "", "sliders");
-  tools.append(grip, toggle);
+  const dim = disc("Dim the panel when the pointer leaves", "perf-hud__dim", "blend");
+  dim.addEventListener("click", () => settings.setDim(!settings.dim));
+  tools.append(grip, toggle, dim);
 
   const view = new PerformanceView({
     budgets: options.budgets,
@@ -124,6 +127,7 @@ const mountPerfHud = (
 
   const applyDim = () => {
     host.classList.toggle("perf-hud--dim", settings.dim);
+    dim.setAttribute("aria-pressed", String(settings.dim));
   };
 
   applyMode();

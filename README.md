@@ -17,7 +17,7 @@ load the scene up past the demo's triangle budget.
   <img
     src="https://raw.githubusercontent.com/zkmake/three-meter/main/docs/hud-full.png"
     width="320"
-    alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), dim on leave, explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values, the FPS graph showing a dashed budget line; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders), with the triangle count in amber for being over its budget; and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Two discs beside it: a drag grip and the compact/full toggle."
+    alt="The HUD in full mode, dark theme. Option rows for theme (light, system, dark), explain metrics and a copy-report button; FPS, CPU and GPU sparklines with live values, the FPS graph showing a dashed budget line; then one row per metric, each with an icon, its value and a checkbox choosing whether the compact card shows it (FPS, calls, CPU, GPU, 1% low, frame p99, hitches, triangles, lines, points, render passes, geometries, textures, shaders), with the triangle count in amber for being over its budget; a top costs toggle; and a footer with the three-meter version, the three revision, a WebGL2 backend badge and the GPU name. Three discs beside it: a drag grip, the compact/full toggle and dim on leave."
   />
 </p>
 
@@ -32,7 +32,7 @@ load the scene up past the demo's triangle budget.
 - **One-click bug reports.** Copy versions, backend, GPU and the current numbers as Markdown.
 - **Stays out of the way.** The sampler and the card are separate components, so toggling the HUD
   never remounts your canvas. The card docks to a screen edge, remembers where you put it, and hides
-  its controls until the pointer comes near.
+  its controls until the pointer comes near; a third disc there dims it when the pointer leaves.
 
 ## Entry points
 
